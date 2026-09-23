@@ -1,0 +1,174 @@
+================================================================================
+          PDF PRICE ACTION BOT (VERSION 3) & CHART RECREATOR COMMANDS
+================================================================================
+
+This document lists all execution commands, command-line arguments, and feature
+toggles for running Bot Version 3, recreating charts, and inspecting past data.
+
+--------------------------------------------------------------------------------
+1. STANDALONE CHART RECREATOR (chart_recreator.py)
+--------------------------------------------------------------------------------
+
+A. Basic Chart Recreation (Fetches from TradingView & Opens in Browser):
+   python chart_recreator.py --pair EUR/USD
+   python chart_recreator.py --pair GBP/USD
+   python chart_recreator.py --pair USD/JPY
+   python chart_recreator.py --pair AUD/USD
+
+B. Offline / Cached Chart Recreation (Zero API calls, Uses SQLite cache):
+   python chart_recreator.py --pair EUR/USD --from-cache
+   python chart_recreator.py --pair GBP/USD --from-cache
+
+C. Send HTML Chart Directly to Telegram via CLI:
+   python chart_recreator.py --pair EUR/USD --send-telegram
+   python chart_recreator.py --pair EUR/USD --from-cache --send-telegram
+   python chart_recreator.py --pair GBP/USD --from-cache --no-open --send-telegram
+
+D. Run Verification Test Signal (Instant Local Chart Creation + Telegram Text & File):
+   python chart_recreator.py --test-signal
+   python chart_recreator.py --pair GBP/USD --test-signal
+   python chart_recreator.py --pair EUR/USD --test-signal
+
+E. Pattern Audit in Terminal (Prints all detected patterns & reasons):
+   python chart_recreator.py --audit EUR/USD
+   python chart_recreator.py --audit GBP/USD
+   python chart_recreator.py --audit EUR/USD --from-cache
+
+F. Custom Bar Lookback (Default is 180 bars):
+   python chart_recreator.py --pair EUR/USD --bars 300
+   python chart_recreator.py --pair GBP/USD --bars 60
+
+G. Silent Generation (Saves HTML without opening browser automatically):
+   python chart_recreator.py --pair EUR/USD --no-open
+   python chart_recreator.py --pair EUR/USD --bars 300 --no-open
+
+H. List All 19 Supported Currency Pairs:
+   python chart_recreator.py --list-pairs
+
+
+--------------------------------------------------------------------------------
+2. BOT VERSION 3 CORE SCRIPT (pdf_price_action_bot_v3_tradingview.py)
+--------------------------------------------------------------------------------
+
+A. Run Live Trading Scanner (Continuous 60-Second Loop across 19 pairs):
+   python pdf_price_action_bot_v3_tradingview.py
+
+B. Instant End-to-End Test Signal (Verifies Local Chart & Telegram Dispatch):
+   python pdf_price_action_bot_v3_tradingview.py --test-signal
+   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --test-signal
+
+C. Recreate Chart Directly via Bot Script:
+   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD
+   python pdf_price_action_bot_v3_tradingview.py --chart GBP/USD
+   python pdf_price_action_bot_v3_tradingview.py --chart USD/JPY
+
+D. Recreate Chart and Send Directly to Telegram:
+   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --send-telegram
+   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --from-cache --send-telegram
+
+E. Recreate Chart from SQLite Cache via Bot Script:
+   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --from-cache
+
+F. Pattern Audit via Bot Script:
+   python pdf_price_action_bot_v3_tradingview.py --audit EUR/USD
+   python pdf_price_action_bot_v3_tradingview.py --audit EUR/USD --from-cache
+
+G. Recreate Chart with Custom Bar Count and No Browser Popup:
+   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --bars 300 --no-open
+
+
+
+--------------------------------------------------------------------------------
+3. COMMAND-LINE OPTIONS REFERENCE
+--------------------------------------------------------------------------------
+
+Option            Description
+------            -----------
+--pair            Currency pair to process (e.g. EUR/USD, GBP/USD, USD/JPY).
+                  Used with chart_recreator.py. Default: EUR/USD.
+
+--chart           Currency pair to recreate chart for.
+                  Used with pdf_price_action_bot_v3_tradingview.py.
+
+--from-cache      Loads historical candles and pre-computed patterns directly
+                  from the local SQLite database (data/market_cache.db).
+                  Does NOT make any API calls to TradingView.
+
+--send-telegram   Uploads and sends the generated interactive HTML chart file
+                  directly to your Telegram chat/channel as a document.
+
+--audit           Runs a terminal-based pattern audit for the specified pair.
+                  Displays all detected engulfing, piercing, and dark cloud
+                  patterns, key S/R levels, and rule breakdown reasons.
+
+--bars            Number of 1-minute historical candles to fetch/load.
+                  Default: 180 bars (3 hours of 1-minute data).
+
+--no-open         Generates the HTML chart file in charts/ folder but does not
+                  automatically launch your web browser.
+
+--list-pairs      Prints the 19 monitored Forex currency pairs.
+
+
+--------------------------------------------------------------------------------
+4. CODE EXECUTION TOGGLES (DIRECT COMMENTING IN BOT V3)
+--------------------------------------------------------------------------------
+
+To turn features ON or OFF during live scanning, simply comment (#) or
+uncomment the execution lines in pdf_price_action_bot_v3_tradingview.py:
+
+A. Inside scan_pair(pair) [Around line 2050]:
+   -----------------------------------------------------------------------------
+   # 1. TEXT LOGGING: Comment line below to turn OFF saving to tv_market_data.log
+   log_tv_data_to_file(pair, df)
+
+   # 2. SQLITE CACHE: Comment line below to turn OFF saving to data/market_cache.db
+   update_market_cache_and_analyze(pair, df)
+
+   # 3. AUTO CHART: Uncomment line below to generate chart on EVERY scan cycle
+   # recreate_tradingview_chart(pair, df, auto_open=False)
+   -----------------------------------------------------------------------------
+
+B. Inside main() Output Handlers [Around line 2220]:
+   -----------------------------------------------------------------------------
+   # 1. FILE LOGGING: Comment line below to turn OFF saving to signals_history.log
+   log_signal_to_file(message)
+
+   # 2. TELEGRAM TEXT ALERT: Comment line below to turn OFF Telegram text alerts
+   send_telegram(message)
+
+   # 3. RECREATE SIGNAL CHART: Comment line below to turn OFF chart generation/popup
+   chart_file = recreate_signal_chart(result, auto_open=True)
+
+   # 4. SEND CHART HTML TO TELEGRAM: Comment line below to turn OFF sending chart to Telegram
+   send_telegram_document(chart_file, caption=f"📊 Interactive Verification Chart: {result['pair']} ({result['direction']})")
+   -----------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+5. OUTPUT FILE LOCATIONS
+--------------------------------------------------------------------------------
+
+1. Recreated HTML Charts:
+   - Latest file:       charts/latest_<PAIR>.html  (e.g. charts/latest_EUR_USD.html)
+   - Timestamped file:  charts/chart_<PAIR>_<TIMESTAMP>.html
+
+2. SQLite Historical Database:
+   - Database file:     data/market_cache.db
+   - Tables:            candles, candle_analysis, detected_setups
+
+3. Text Logs:
+   - Signals Log:       signals_history.log
+   - Raw TV Feed Log:   tv_market_data.log
+
+
+--------------------------------------------------------------------------------
+6. EARLIER BOT VERSIONS (REFERENCE)
+--------------------------------------------------------------------------------
+
+Version 1 (Original 5-second polling engine):
+python pdf_price_action_bot_v1.py
+
+Version 2 (Candle-sync + multi-broker engine):
+python pdf_price_action_bot_v2.py
+================================================================================

@@ -53,28 +53,40 @@ H. List All 19 Supported Currency Pairs:
 A. Run Live Trading Scanner (Continuous 60-Second Loop across 19 pairs):
    python pdf_price_action_bot_v3_tradingview.py
 
-B. Instant End-to-End Test Signal (Verifies Local Chart & Telegram Dispatch):
+B. Live Single-Pair Testing & Monitoring (EUR/USD only - Builds charts on ANY detected pattern):
+   python pdf_price_action_bot_v3_tradingview.py --pair EUR/USD --live
+   python pdf_price_action_bot_v3_tradingview.py --pair EUR/USD --live --send-telegram
+
+C. Run Live Scanner with Line-by-Line Pair Status (Verbose Mode):
+   python pdf_price_action_bot_v3_tradingview.py --verbose
+
+D. Run Live Scanner with Continuous Background Local Chart Generation:
+   python pdf_price_action_bot_v3_tradingview.py --auto-charts
+   python pdf_price_action_bot_v3_tradingview.py --auto-charts --verbose
+
+E. Instant End-to-End Test Signal (Verifies Local Chart & Telegram Dispatch):
    python pdf_price_action_bot_v3_tradingview.py --test-signal
-   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --test-signal
+   python pdf_price_action_bot_v3_tradingview.py --pair GBP/USD --test-signal
+   python pdf_price_action_bot_v3_tradingview.py --pair EUR/USD --test-signal
 
-C. Recreate Chart Directly via Bot Script:
-   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD
-   python pdf_price_action_bot_v3_tradingview.py --chart GBP/USD
-   python pdf_price_action_bot_v3_tradingview.py --chart USD/JPY
+E. Recreate Chart Directly via Bot Script:
+   python pdf_price_action_bot_v3_tradingview.py --pair EUR/USD
+   python pdf_price_action_bot_v3_tradingview.py --pair GBP/USD
+   python pdf_price_action_bot_v3_tradingview.py --pair USD/JPY
 
-D. Recreate Chart and Send Directly to Telegram:
-   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --send-telegram
-   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --from-cache --send-telegram
+F. Recreate Chart and Send Directly to Telegram:
+   python pdf_price_action_bot_v3_tradingview.py --pair EUR/USD --send-telegram
+   python pdf_price_action_bot_v3_tradingview.py --pair EUR/USD --from-cache --send-telegram
 
-E. Recreate Chart from SQLite Cache via Bot Script:
-   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --from-cache
+G. Recreate Chart from SQLite Cache via Bot Script:
+   python pdf_price_action_bot_v3_tradingview.py --pair EUR/USD --from-cache
 
-F. Pattern Audit via Bot Script:
+H. Pattern Audit via Bot Script:
    python pdf_price_action_bot_v3_tradingview.py --audit EUR/USD
    python pdf_price_action_bot_v3_tradingview.py --audit EUR/USD --from-cache
 
-G. Recreate Chart with Custom Bar Count and No Browser Popup:
-   python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --bars 300 --no-open
+I. Recreate Chart with Custom Bar Count and No Browser Popup:
+   python pdf_price_action_bot_v3_tradingview.py --pair EUR/USD --bars 300 --no-open
 
 
 
@@ -85,10 +97,15 @@ G. Recreate Chart with Custom Bar Count and No Browser Popup:
 Option            Description
 ------            -----------
 --pair            Currency pair to process (e.g. EUR/USD, GBP/USD, USD/JPY).
-                  Used with chart_recreator.py. Default: EUR/USD.
+                  Works across both chart_recreator.py and bot script.
 
---chart           Currency pair to recreate chart for.
-                  Used with pdf_price_action_bot_v3_tradingview.py.
+--chart           Alias for --pair.
+
+--auto-charts     Continuously generates/updates local HTML charts in charts/
+                  for all 19 pairs on every scan cycle without browser popup.
+
+--verbose         Prints detailed status line for each monitored pair during
+                  every scanning cycle.
 
 --from-cache      Loads historical candles and pre-computed patterns directly
                   from the local SQLite database (data/market_cache.db).
@@ -96,6 +113,9 @@ Option            Description
 
 --send-telegram   Uploads and sends the generated interactive HTML chart file
                   directly to your Telegram chat/channel as a document.
+
+--test-signal     Runs an immediate simulated signal execution testing file logging,
+                  Telegram text alert, local chart generation, and chart Telegram upload.
 
 --audit           Runs a terminal-based pattern audit for the specified pair.
                   Displays all detected engulfing, piercing, and dark cloud

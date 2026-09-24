@@ -20,7 +20,14 @@ from txcore.execution.telegram import TelegramNotifier
 from txcore.execution.file_logger import log_signal_to_file, log_market_data_to_file
 from txcore.audit.deduplicator import SignalDeduplicator
 from txcore.audit.auditor import TradeAuditor
-from txcore.visualization.chart_builder import create_interactive_chart
+from txcore.visualization.chart_builder import (
+    create_interactive_chart,
+    build_tradingview_chart_html,
+    build_plotly_chart,
+    recreate_tradingview_chart,
+    audit_pair_patterns,
+    run_test_signal,
+)
 
 __version__ = "1.0.0"
 __all__ = [
@@ -40,4 +47,17 @@ __all__ = [
     "SignalDeduplicator",
     "TradeAuditor",
     "create_interactive_chart",
+    "build_tradingview_chart_html",
+    "build_plotly_chart",
+    "recreate_tradingview_chart",
+    "audit_pair_patterns",
+    "run_test_signal",
+    "run_chart_cli",
 ]
+
+
+def __getattr__(name: str):
+    if name == "run_chart_cli":
+        from txcore.visualization.chart_cli import run_chart_cli
+        return run_chart_cli
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

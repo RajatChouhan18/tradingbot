@@ -21,9 +21,11 @@ FINNHUB_BASE_URL = os.getenv("FINNHUB_BASE_URL", "https://finnhub.io/api/v1")
 NEWS_LOOKBACK_MINUTES = int(os.getenv("NEWS_LOOKBACK_MINUTES", "10"))
 NEWS_CACHE_TTL = int(os.getenv("NEWS_CACHE_TTL", "60"))
 
-# Telegram Alert Settings
+# Telegram Alert Settings (Supports single or multiple comma/space separated chat IDs)
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-CHAT_ID = os.getenv("CHAT_ID", "")
+raw_chat_ids = os.getenv("CHAT_IDS", os.getenv("CHAT_ID", ""))
+CHAT_IDS = [cid.strip() for cid in raw_chat_ids.replace(";", ",").split(",") if cid.strip()]
+CHAT_ID = CHAT_IDS[0] if CHAT_IDS else ""
 
 # Execution Schedule & Rate Limiting
 CANDLE_SYNC = os.getenv("CANDLE_SYNC", "true").lower() == "true"

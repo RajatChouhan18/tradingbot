@@ -6,44 +6,44 @@ This document lists all execution commands, command-line arguments, and feature
 toggles for running Bot Version 3, recreating charts, and inspecting past data.
 
 --------------------------------------------------------------------------------
-1. STANDALONE CHART RECREATOR (chart_recreator.py)
+1. STANDALONE CHART CLI (txcore.visualization.chart_cli)
 --------------------------------------------------------------------------------
 
 A. Basic Chart Recreation (Fetches from TradingView & Opens in Browser):
-   python chart_recreator.py --pair EUR/USD
-   python chart_recreator.py --pair GBP/USD
-   python chart_recreator.py --pair USD/JPY
-   python chart_recreator.py --pair AUD/USD
+   python -m txcore.visualization.chart_cli --pair EUR/USD
+   python -m txcore.visualization.chart_cli --pair GBP/USD
+   python -m txcore.visualization.chart_cli --pair USD/JPY
+   python -m txcore.visualization.chart_cli --pair AUD/USD
 
 B. Offline / Cached Chart Recreation (Zero API calls, Uses SQLite cache):
-   python chart_recreator.py --pair EUR/USD --from-cache
-   python chart_recreator.py --pair GBP/USD --from-cache
+   python -m txcore.visualization.chart_cli --pair EUR/USD --from-cache
+   python -m txcore.visualization.chart_cli --pair GBP/USD --from-cache
 
 C. Send HTML Chart Directly to Telegram via CLI:
-   python chart_recreator.py --pair EUR/USD --send-telegram
-   python chart_recreator.py --pair EUR/USD --from-cache --send-telegram
-   python chart_recreator.py --pair GBP/USD --from-cache --no-open --send-telegram
+   python -m txcore.visualization.chart_cli --pair EUR/USD --send-telegram
+   python -m txcore.visualization.chart_cli --pair EUR/USD --from-cache --send-telegram
+   python -m txcore.visualization.chart_cli --pair GBP/USD --from-cache --no-open --send-telegram
 
 D. Run Verification Test Signal (Instant Local Chart Creation + Telegram Text & File):
-   python chart_recreator.py --test-signal
-   python chart_recreator.py --pair GBP/USD --test-signal
-   python chart_recreator.py --pair EUR/USD --test-signal
+   python -m txcore.visualization.chart_cli --test-signal
+   python -m txcore.visualization.chart_cli --pair GBP/USD --test-signal
+   python -m txcore.visualization.chart_cli --pair EUR/USD --test-signal
 
 E. Pattern Audit in Terminal (Prints all detected patterns & reasons):
-   python chart_recreator.py --audit EUR/USD
-   python chart_recreator.py --audit GBP/USD
-   python chart_recreator.py --audit EUR/USD --from-cache
+   python -m txcore.visualization.chart_cli --audit EUR/USD
+   python -m txcore.visualization.chart_cli --audit GBP/USD
+   python -m txcore.visualization.chart_cli --audit EUR/USD --from-cache
 
 F. Custom Bar Lookback (Default is 180 bars):
-   python chart_recreator.py --pair EUR/USD --bars 300
-   python chart_recreator.py --pair GBP/USD --bars 60
+   python -m txcore.visualization.chart_cli --pair EUR/USD --bars 300
+   python -m txcore.visualization.chart_cli --pair GBP/USD --bars 60
 
 G. Silent Generation (Saves HTML without opening browser automatically):
-   python chart_recreator.py --pair EUR/USD --no-open
-   python chart_recreator.py --pair EUR/USD --bars 300 --no-open
+   python -m txcore.visualization.chart_cli --pair EUR/USD --no-open
+   python -m txcore.visualization.chart_cli --pair EUR/USD --bars 300 --no-open
 
 H. List All 19 Supported Currency Pairs:
-   python chart_recreator.py --list-pairs
+   python -m txcore.visualization.chart_cli --list-pairs
 
 
 --------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ I. Recreate Chart with Custom Bar Count and No Browser Popup:
 Option            Description
 ------            -----------
 --pair            Currency pair to process (e.g. EUR/USD, GBP/USD, USD/JPY).
-                  Works across both chart_recreator.py and bot script.
+                  Works across chart_cli and bot script.
 
 --chart           Alias for --pair.
 

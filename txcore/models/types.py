@@ -91,6 +91,21 @@ class Candle:
         return self.close == self.open
 
 
+import uuid
+
+
+def generate_signal_id(pair: str = "", timestamp: Optional[datetime] = None) -> str:
+    """
+    Generates a unique, collision-resistant identifier for every signal.
+    Format: SIG-{PAIR}-{YYYYMMDD-HHMMSS}-{RANDOM_HEX_6}
+    Example: SIG-EURUSD-20260924-011500-A9F3D2
+    """
+    ts_str = (timestamp or datetime.now(timezone.utc)).strftime("%Y%m%d-%H%M%S")
+    clean_pair = pair.replace("/", "").replace("_", "").replace(":", "").upper() if pair else "GEN"
+    suffix = uuid.uuid4().hex[:6].upper()
+    return f"SIG-{clean_pair}-{ts_str}-{suffix}"
+
+
 @dataclass
 class SetupResult:
     """Represents an identified pattern setup awaiting confirmation/entry."""
@@ -113,16 +128,22 @@ class Signal:
     price: float
     candle_time: datetime
     reason: str
+    signal_id: str = ""
     status: SignalStatus = SignalStatus.APPROVED
     provider: str = "TRADINGVIEW"
     news_status: str = "CLEAR"
     timeframe: str = "1-Minute"
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self):
+        if not self.signal_id:
+            self.signal_id = generate_signal_id(self.pair, self.candle_time)
+
     def to_alert_message(self, version_tag: str = "V3 - TRADINGVIEW") -> str:
-        """Renders standard emoji-formatted alert text."""
+        """Renders standard emoji-formatted alert text with unique signal ID."""
         return (
-            f"🚨 PDF PRICE ACTION SIGNAL ({version_tag}) 🚨\n\n"
+            f"🚨 PDF PRICE ACTION SIGNAL ({version_tag}) 🚨\n"
+            f"🆔 ID: {self.signal_id}\n\n"
             f"💱 Pair: {self.pair}\n"
             f"⏱ Timeframe: {self.timeframe}\n"
             f"📊 Signal: {self.direction.value}\n"

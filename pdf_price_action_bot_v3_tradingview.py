@@ -30,6 +30,7 @@ from config.settings import (
     NEWS_CACHE_TTL,
     TELEGRAM_BOT_TOKEN,
     CHAT_ID,
+    CHAT_IDS,
     CANDLE_SYNC,
     PAIR_REQUEST_DELAY,
     SCAN_INTERVAL_SECONDS,
@@ -49,6 +50,9 @@ from txcore import (
     log_signal_to_file,
     log_market_data_to_file,
     create_interactive_chart,
+    recreate_tradingview_chart,
+    audit_pair_patterns,
+    run_test_signal,
 )
 
 # Initialize singletons
@@ -71,7 +75,7 @@ news_filter = FinnhubNewsFilter(
 
 telegram_notifier = TelegramNotifier(
     bot_token=TELEGRAM_BOT_TOKEN,
-    chat_id=CHAT_ID,
+    chat_ids=CHAT_IDS,
 )
 
 deduplicator = SignalDeduplicator(max_age_seconds=86400.0)
@@ -139,7 +143,9 @@ def main():
     print("=" * 70)
 
     if not telegram_notifier.is_configured:
-        print("⚠️ [WARNING] CHAT_ID is empty or set to 'dummy_chat_id'. Telegram alerts will be skipped.")
+        print("⚠️ [WARNING] No valid CHAT_IDS configured. Telegram alerts will be skipped.")
+    else:
+        print(f"TELEGRAM TARGETS: {len(telegram_notifier.chat_ids)} recipient(s) configured ({', '.join(telegram_notifier.chat_ids)})")
 
     while True:
         if CANDLE_SYNC:
@@ -174,10 +180,8 @@ def main():
                 # 1. FILE LOGGING: Comment the line below to turn OFF saving to file
                 log_signal_to_file(alert_text)
 
-                # 2. TELEGRAM ALERT: Comment the line below to turn OFF Telegram alerts
-                telegram_notifier.send(alert_text, signal=signal)
-
-                # 3. INTERACTIVE CHART: Generates standalone HTML visual chart with annotations
+                # 2. INTERACTIVE CHART: Generates TradingView Lightweight Chart in exports/charts/
+                chart_path = None
                 try:
                     chart_path = create_interactive_chart(
                         completed_df,
@@ -185,10 +189,14 @@ def main():
                         signal=signal,
                         support_level=signal.level if signal.direction.value == "CALL" else None,
                         resistance_level=signal.level if signal.direction.value == "PUT" else None,
+                        engine="tradingview",
                     )
                     print(f"📊 [CHART CREATED] {chart_path}")
                 except Exception as chart_err:
                     print(f"⚠️ [CHART ERROR] {chart_err}")
+
+                # 3. TELEGRAM ALERT & CHART ATTACHMENT: Dispatches text alert + chart document
+                telegram_notifier.send(alert_text, signal=signal, chart_path=chart_path)
 
                 deduplicator.record(signal.pair, signal.pattern, signal.candle_time)
                 auditor.record_signal(signal.pair, signal.direction.value, signal.pattern, "APPROVED")

@@ -6,6 +6,7 @@ from txcore.models.types import (
     Candle,
     SetupResult,
     Signal,
+    generate_signal_id,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "Candle",
     "SetupResult",
     "Signal",
+    "generate_signal_id",
 ]

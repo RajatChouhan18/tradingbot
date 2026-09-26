@@ -91,38 +91,180 @@ I. Recreate Chart with Custom Bar Count and No Browser Popup:
 
 
 --------------------------------------------------------------------------------
-3. COMMAND-LINE OPTIONS REFERENCE
+3. UNIVERSAL MARKET INSPECTION & INTELLIGENCE COMMANDS
+   (python -m txcore.cli)
+--------------------------------------------------------------------------------
+
+A. Real-Time Market Overview & Snapshot:
+   (Displays Live Market State, IST Clock, VIX Volatility Regime,
+    NIFTY 50 Market Breadth, Core Benchmarks & Top Sectoral Movers)
+   python -m txcore.cli
+   python -m txcore.cli --snapshot
+
+B. Extract Stock Candlesticks (NSE / BSE Equities):
+   # Default 5-minute candles (30 bars):
+   python -m txcore.cli --stock RELIANCE
+   python -m txcore.cli --stock TCS
+   python -m txcore.cli --stock HDFCBANK
+
+   # Custom Timeframes (1m, 3m, 5m, 15m, 1h, 1d) and Lookback Bars:
+   python -m txcore.cli --stock INFY -t 1m -b 60
+   python -m txcore.cli --stock SBIN -t 15m -b 100
+   python -m txcore.cli --stock BHARTIARTL -t 1d -b 365
+
+C. Extract Benchmark & Sectoral Indices:
+   # Major Benchmarks:
+   python -m txcore.cli --index NIFTY -t 5m -b 50
+   python -m txcore.cli --index BANKNIFTY -t 5m -b 50
+   python -m txcore.cli --index FINNIFTY -t 15m -b 60
+   python -m txcore.cli --index MIDCPNIFTY -t 5m -b 40
+   python -m txcore.cli --index SENSEX -t 5m -b 50
+   python -m txcore.cli --index INDIAVIX -t 1d -b 30
+
+   # Sectoral Indices:
+   python -m txcore.cli --index NIFTYIT -t 15m -b 50
+   python -m txcore.cli --index NIFTYAUTO -t 15m -b 50
+
+D. Market Breadth & Sentiment Analysis (Advances, Declines, ADR):
+   python -m txcore.cli --breadth
+
+E. Ranked Sectoral Performance (Gainers to Losers):
+   python -m txcore.cli --sectors
+
+F. Export Candlestick Data Directly to CSV:
+   python -m txcore.cli --stock RELIANCE -t 5m -b 100 --csv exports/reliance_5m.csv
+   python -m txcore.cli --index NIFTY -t 15m -b 200 --csv exports/nifty_15m.csv
+
+G. Generate Interactive TradingView Lightweight HTML Charts:
+   # Create and automatically launch chart in browser:
+   python -m txcore.cli --stock RELIANCE --chart
+   python -m txcore.cli --index NIFTY --chart -t 15m -b 100
+   python -m txcore.cli --stock TCS --chart -t 1h -b 100
+
+   # Create chart silently without opening browser:
+   python -m txcore.cli --stock RELIANCE --chart --no-open
+
+   # Create chart and send directly to Telegram:
+   python -m txcore.cli --stock RELIANCE --chart --send-telegram
+   python -m txcore.cli --index BANKNIFTY --chart --send-telegram
+
+H. Analyze Price Action Trends & Support/Resistance Levels:
+   python -m txcore.cli --stock RELIANCE --trend
+   python -m txcore.cli --index NIFTY --trend -t 15m
+   python -m txcore.cli --stock HDFCBANK --trend -t 5m -b 100
+
+I. Terminal Price Action Pattern Recognition & Audit:
+   (Detects Bullish/Bearish Engulfing, Piercing Line, Dark Cloud Cover with S/R levels)
+   python -m txcore.cli --stock RELIANCE --audit
+   python -m txcore.cli --index NIFTY --audit -t 5m -b 80
+   python -m txcore.cli --stock TCS --audit -t 15m
+
+J. Strategy Signal Scanning & Telegram Alert Dispatch:
+   # Scan single asset for confirmed PDF Price Action entry signal:
+   python -m txcore.cli --index NIFTY --scan-signal
+   python -m txcore.cli --stock RELIANCE --scan-signal -t 5m
+   python -m txcore.cli --stock RELIANCE --scan-signal --chart --send-telegram
+
+   # Batch scan entire Indian watchlist (Nifty, Bank Nifty, Reliance, HDFC, etc.):
+   python -m txcore.cli --scan-watchlist
+   python -m txcore.cli --scan-watchlist -t 5m -b 60 --send-telegram
+
+
+--------------------------------------------------------------------------------
+4. ALGOTRADE PROCESS MODEL & MULTI-STRATEGY COMMANDS
+   (run_algotrade.py & txcore.algotrade)
+--------------------------------------------------------------------------------
+
+A. Spin Up a Named AlgoTrade Instance:
+   # User-named process for Indian Equity:
+   python run_algotrade.py --name "Ishaq strategy 1" --market INDIAN_EQUITY --stock RELIANCE
+   python run_algotrade.py --name "NiftyScalper" --index NIFTY -t 5m --chart
+
+   # User-named process for Forex:
+   python run_algotrade.py --name "Forex Price Action" --market FOREX --symbol EUR/USD -t 1m
+
+B. Run AlgoTrade via txcore.cli module:
+   python -m txcore.cli --algo --name "Ishaq strategy 2" --market INDIAN_EQUITY --stock TCS -t 5m -b 50
+
+C. Historical Strategy Testing, Simulation & Backtesting (Walk-Forward Replay):
+   # Test and evaluate strategy on past dates for a stock:
+   python run_algotrade.py --name "RelianceBacktest" --stock RELIANCE --start-date 2026-09-01 --end-date 2026-09-25 --evaluate --no-open
+
+   # Test on Index over past time window:
+   python run_algotrade.py --name "NiftyBacktest" --index NIFTY --start-date 2026-09-20 --end-date 2026-09-26 --evaluate --no-open
+
+   # Parallel multi-stock backtest evaluation:
+   python run_algotrade.py --name "PortfolioBacktest" --stock "RELIANCE,TCS,INFY" --start-date 2026-09-20 --end-date 2026-09-26 --evaluate --no-open
+
+   # Direct CLI historical evaluation with custom risk:reward ratio:
+   python -m txcore.cli --stock RELIANCE --start-date 2026-09-01 --end-date 2026-09-25 --evaluate --risk-reward 2.0 --chart --no-open
+
+   # Historical trend analysis & pattern audit on past data:
+   python -m txcore.cli --stock TCS --start-date 2026-09-10 --end-date 2026-09-20 --trend
+   python -m txcore.cli --stock INFY --start-date 2026-09-10 --end-date 2026-09-20 --audit
+
+
+
+--------------------------------------------------------------------------------
+5. COMMAND-LINE OPTIONS REFERENCE
 --------------------------------------------------------------------------------
 
 Option            Description
 ------            -----------
---pair            Currency pair to process (e.g. EUR/USD, GBP/USD, USD/JPY).
-                  Works across chart_cli and bot script.
+--pair            Forex currency pair to process (e.g. EUR/USD, GBP/USD, USD/JPY).
 
---chart           Alias for --pair.
+--stock           Indian equity stock symbol(s) to extract (e.g. RELIANCE, TCS,
+                  or comma-separated "RELIANCE,TCS"). Normalizes exchange automatically.
 
---auto-charts     Continuously generates/updates local HTML charts in charts/
-                  for all 19 pairs on every scan cycle without browser popup.
+--index           Indian market index symbol(s) to extract (e.g. NIFTY, BANKNIFTY,
+                  or comma-separated "NIFTY,BANKNIFTY").
 
---verbose         Prints detailed status line for each monitored pair during
-                  every scanning cycle.
+--symbol,         Generic target symbol(s) for any market (e.g. EUR/USD,
+--symbols         or comma-separated "EUR/USD,GBP/USD").
 
---from-cache      Loads historical candles and pre-computed patterns directly
-                  from the local SQLite database (data/market_cache.db).
-                  Does NOT make any API calls to TradingView.
+--start-date,     Start date/time for past data fetching & historical evaluation
+--from-date       (e.g. "2026-09-01", "2026-09-20 09:15:00").
 
---send-telegram   Uploads and sends the generated interactive HTML chart file
-                  directly to your Telegram chat/channel as a document.
+--end-date,       End date/time for past data fetching & historical evaluation
+--to-date         (e.g. "2026-09-25", "2026-09-26 15:30:00").
 
---test-signal     Runs an immediate simulated signal execution testing file logging,
-                  Telegram text alert, local chart generation, and chart Telegram upload.
+--evaluate,       Executes historical strategy walk-forward backtest and produces
+--backtest        win-rate %, total return %, profit factor, and trade log.
 
---audit           Runs a terminal-based pattern audit for the specified pair.
+--risk-reward     Risk-to-reward ratio for trade target calculation in strategy
+                  evaluation (default: 1.5).
+
+--timeframe, -t   Candlestick timeframe interval for extraction.
+                  Options: 1m, 3m, 5m, 15m, 1h, 1d. (Default: 5m).
+
+--bars, -b        Number of lookback candles to fetch. (Default: 30 or 50 bars).
+
+--chart           Generates interactive TradingView HTML chart for the specified
+                  pair, stock, or index (opens in browser unless --no-open).
+
+--trend           Analyzes trend structure, EMAs, Support & Resistance distances.
+
+--audit           Runs a terminal-based pattern audit for the specified asset.
                   Displays all detected engulfing, piercing, and dark cloud
                   patterns, key S/R levels, and rule breakdown reasons.
 
---bars            Number of 1-minute historical candles to fetch/load.
-                  Default: 180 bars (3 hours of 1-minute data).
+--scan-signal     Evaluates the strategy engine on recent completed bars and
+                  outputs confirmed actionable entry signals.
+
+--scan-watchlist  Batch scans monitored Indian stocks & indices for signals.
+
+--snapshot, -s    Displays live Indian market report (Session state, VIX,
+                  Market Breadth, Core Benchmarks, Top Movers).
+
+--breadth         Displays live Advances, Declines, Unchanged counts, Advance-
+                  Decline Ratio (ADR), and market sentiment.
+
+--sectors         Displays all Indian sectoral indices ranked by performance.
+
+--csv             Optional file path to export extracted DataFrame as a CSV file.
+
+--send-telegram   Uploads and sends the generated interactive HTML chart file
+                  or signal alert text directly to Telegram.
 
 --no-open         Generates the HTML chart file in charts/ folder but does not
                   automatically launch your web browser.
@@ -131,7 +273,7 @@ Option            Description
 
 
 --------------------------------------------------------------------------------
-4. CODE EXECUTION TOGGLES (DIRECT COMMENTING IN BOT V3)
+5. CODE EXECUTION TOGGLES (DIRECT COMMENTING IN BOT V3)
 --------------------------------------------------------------------------------
 
 To turn features ON or OFF during live scanning, simply comment (#) or
@@ -166,7 +308,7 @@ B. Inside main() Output Handlers [Around line 2220]:
 
 
 --------------------------------------------------------------------------------
-5. OUTPUT FILE LOCATIONS
+6. OUTPUT FILE LOCATIONS
 --------------------------------------------------------------------------------
 
 1. Recreated HTML Charts:
@@ -177,13 +319,16 @@ B. Inside main() Output Handlers [Around line 2220]:
    - Database file:     data/market_cache.db
    - Tables:            candles, candle_analysis, detected_setups
 
-3. Text Logs:
+3. Indian Market CSV Exports:
+   - Export directory:  exports/ (e.g. exports/nifty_15m.csv, exports/reliance_5m.csv)
+
+4. Text Logs:
    - Signals Log:       signals_history.log
    - Raw TV Feed Log:   tv_market_data.log
 
 
 --------------------------------------------------------------------------------
-6. EARLIER BOT VERSIONS (REFERENCE)
+7. EARLIER BOT VERSIONS (REFERENCE)
 --------------------------------------------------------------------------------
 
 Version 1 (Original 5-second polling engine):
@@ -192,3 +337,4 @@ python pdf_price_action_bot_v1.py
 Version 2 (Candle-sync + multi-broker engine):
 python pdf_price_action_bot_v2.py
 ================================================================================
+

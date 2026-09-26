@@ -145,8 +145,16 @@ def build_tradingview_chart_html(
 
     n = len(df)
     is_jpy = "JPY" in pair.upper()
-    precision = 3 if is_jpy else 5
-    min_move = 0.001 if is_jpy else 0.00001
+    is_indian = any(idx in pair.upper() for idx in ("NIFTY", "SENSEX", "VIX", "BANK", "RELIANCE", "TCS", "INFY", "SBIN", "HDFC"))
+    if is_jpy:
+        precision = 3
+        min_move = 0.001
+    elif is_indian or (float(df["close"].iloc[-1]) >= 500.0 if not df.empty else False):
+        precision = 2
+        min_move = 0.05
+    else:
+        precision = 5
+        min_move = 0.00001
 
     candle_data = []
     analysis_map = {}
@@ -924,6 +932,7 @@ def create_interactive_chart(
     lookback_bars: int = 180,
     engine: str = "tradingview",
     setups: Optional[List[Dict[str, Any]]] = None,
+    auto_open: bool = False,
 ) -> str:
     """
     Renders an interactive HTML candlestick chart and saves it into the exports directory.
@@ -940,7 +949,7 @@ def create_interactive_chart(
         output_dir = DEFAULT_CHARTS_DIR
     os.makedirs(output_dir, exist_ok=True)
 
-    clean_symbol = symbol.replace("/", "_").replace(":", "_")
+    clean_symbol = symbol.replace("/", "_").replace(":", "_").replace(" ", "_")
     timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
     timestamped_file = os.path.join(output_dir, f"chart_{clean_symbol}_{timestamp_str}.html")
     latest_file = os.path.join(output_dir, f"latest_{clean_symbol}.html")
@@ -973,6 +982,12 @@ def create_interactive_chart(
             f.write(html_content)
         with open(latest_file, "w", encoding="utf-8") as f:
             f.write(html_content)
+
+    if auto_open:
+        try:
+            webbrowser.open(f"file:///{os.path.abspath(timestamped_file)}")
+        except Exception:
+            pass
 
     return timestamped_file
 

@@ -1,12 +1,13 @@
 # PDF Price Action Trading Bot Documentation
 
-**Version:** 1.0.0 & 2.0.0  
+**Version:** 1.0.0, 2.0.0 & 3.0.0 (Modular `txcore` Framework)  
 **Source Strategy:** *BO Price Action Book by Ishaq's Binary Academy*  
 **V1 Implementation File:** [`pdf_price_action_bot_v1.py`](file:///e:/Txbot/pdf_price_action_bot_v1.py) (Original 5s Polling Engine)  
 **V2 Implementation File:** [`pdf_price_action_bot_v2.py`](file:///e:/Txbot/pdf_price_action_bot_v2.py) (Candle-Sync + Multi-Provider Feed)  
-**Target Market:** Forex (19 Pairs) / Binary Options (1-minute expiry)  
-**Supported Providers:** Finnhub, Twelve Data, OANDA REST API, MetaTrader 5 (MT5)  
-**Alert Channel:** Telegram Bot API  
+**AlgoTrade Runner:** [`run_algotrade.py`](file:///e:/Txbot/run_algotrade.py) / [`txcore/algotrade.py`](file:///e:/Txbot/txcore/algotrade.py) / CLI: [`txcore/cli.py`](file:///e:/Txbot/txcore/cli.py)  
+**Target Markets:** Forex (19 Pairs) & Indian Markets (NSE/BSE Equities, Benchmark Indices, Sectoral Indices, F&O)  
+**Supported Providers:** TradingView, NSE India Direct HTTP API, Finnhub, Twelve Data, OANDA REST API, MT5  
+**Alert Channels:** Telegram Bot API (Multi-Chat ID), Interactive TradingView Lightweight HTML Charts, Text Logging  
 
 ---
 
@@ -484,6 +485,176 @@ python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --from-cache
 python pdf_price_action_bot_v3_tradingview.py --chart EUR/USD --send-telegram
 python pdf_price_action_bot_v3_tradingview.py --audit EUR/USD
 ```
+
+---
+
+## 11. Universal Market-Agnostic Architecture & TradeAlgo Suite
+
+The trading bot uses a **universal, market-agnostic pipeline** where the same modules and data flow work for ALL markets (Forex, Indian Equities, Commodities, Crypto). Market-specific details are injected via configuration and provider adapters.
+
+### A. Modular Architecture (Common for All Markets)
+
+```
+txcore/
+├── providers/
+│   ├── base.py                        # BaseDataProvider interface
+│   ├── tradingview.py                 # Resilient TradingView provider
+│   ├── indian_provider.py             # IndianMarketDataProvider (implements BaseDataProvider)
+│   ├── nse_provider.py                # Resilient direct HTTP client for NSE India (NSEClient)
+│   └── session_manager.py             # MarketSessionManager (Asia/Kolkata timezone & holidays)
+├── models/
+│   ├── types.py                       # MarketStatus, VixRegime, IndexQuote, StockQuote, MarketBreadth, Signal
+│   └── __init__.py                    # Model exports
+├── analysis/
+│   ├── candle.py                      # Candle classification, wick-to-body ratios
+│   ├── levels.py                      # Key support/resistance levels
+│   ├── patterns.py                    # Candlestick pattern detection
+│   ├── indicators.py                  # EMA, SMA, RSI, MACD, Bollinger Bands, VWAP, Trend Analysis
+│   └── volatility.py                  # VIX regime classification & risk analysis
+├── strategies/
+│   ├── base.py                        # BaseStrategy interface
+│   └── pdf_price_action.py            # PDF Price Action strategy engine
+├── execution/
+│   ├── base.py                        # BaseNotifier interface
+│   ├── telegram.py                    # Telegram alert & document dispatcher
+│   └── file_logger.py                 # Persistent file logging
+├── visualization/
+│   └── chart_builder.py               # Interactive TradingView HTML chart generator
+├── algotrade.py                       # AlgoTrade process model & 9-stage pipeline engine
+└── cli.py                             # Universal CLI tool
+run_algotrade.py                       # Named AlgoTrade process runner entry point
+```
+
+### B. Core Features & Capabilities
+
+#### 1. Indian Stocks Candlestick Extraction
+- Fetches chronologically sorted OHLCV bars for any Indian equity stock across multiple timeframes (`1m`, `3m`, `5m`, `15m`, `1h`, `1d`).
+- Automatic symbol normalization for exchange notations: `RELIANCE`, `NSE:TCS`, `BSE:HDFCBANK`, `INFY.NS`.
+- High-liquidity watchlist includes: `RELIANCE`, `TCS`, `HDFCBANK`, `INFY`, `ICICIBANK`, `SBIN`, `BHARTIARTL`, `ITC`, `LT`, `KOTAKBANK`, `BAJFINANCE`, `MARUTI`, `TATAMOTORS`, `SUNPHARMA`, and more.
+
+#### 2. Indian Benchmark & Sectoral Indices Extraction
+- **Major Benchmarks:**
+  - `NIFTY` / `NIFTY 50` (NSE Benchmark 50)
+  - `BANKNIFTY` / `NIFTY BANK` (Banking Sector Index)
+  - `FINNIFTY` / `NIFTY FINANCIAL SERVICES` (Financial Services Index)
+  - `MIDCPNIFTY` / `NIFTY MIDCAP SELECT` (Midcap Index)
+  - `SENSEX` / `S&P BSE SENSEX` (BSE 30 Benchmark Index)
+  - `INDIAVIX` / `INDIA VIX` (Volatility Index / Fear Gauge)
+- **Sectoral Indices:**
+  - `NIFTY IT` (`CNXIT`), `NIFTY AUTO` (`CNXAUTO`), `NIFTY FMCG` (`CNXFMCG`), `NIFTY METAL` (`CNXMETAL`), `NIFTY PHARMA` (`CNXPHARMA`), `NIFTY REALTY`, `NIFTY ENERGY`, `NIFTY INFRA`, `NIFTY PSU BANK`, `NIFTY PRIVATE BANK`.
+
+#### 3. Real-Time Trading Session & Holiday Manager (`IndianMarketSessionManager`)
+- Evaluates market state strictly in `Asia/Kolkata` (IST) timezone.
+- Classifies session states: `OPEN`, `PRE_OPEN` (09:00 - 09:15 IST), `POST_CLOSE` (15:30 - 16:00 IST), `CLOSED`, `WEEKEND`, and `HOLIDAY`.
+- Pre-loaded with official NSE/BSE trading holidays for 2026.
+- Calculates exact minutes to market open and minutes to market close.
+
+#### 4. India VIX Volatility Dynamics & Institutional Regimes
+Categorizes India VIX into 4 actionable institutional trading regimes:
+- **`LOW` (< 13.0):** Cheap premiums, sluggish ranges, frequent whipsaws for option buyers.
+- **`NORMAL` (13.0 - 18.0):** Optimal trending momentum; ideal for directional price action breakouts.
+- **`ELEVATED` (18.0 - 24.0):** High volatility, expanding option premiums; wider stop-losses required.
+- **`EXTREME` (> 24.0):** Panic / High-fear environment; severe IV crush risk post-events.
+
+#### 5. Market Breadth & Sentiment Analysis (`MarketBreadth`)
+- Calculates live Advances, Declines, Unchanged counts, and Advance-Decline Ratio (ADR) across the NIFTY 50 or broader indices.
+- Classifies overall market sentiment: `STRONGLY_BULLISH` (ADR $\ge 2.0$), `MODERATELY_BULLISH` (ADR $> 1.1$), `NEUTRAL` ($0.9 \le \text{ADR} \le 1.1$), `MODERATELY_BEARISH`, `STRONGLY_BEARISH`.
+
+#### 6. Direct NSE India REST API Integration (`NSEClient`)
+- Direct integration with `https://www.nseindia.com` REST endpoints (`/api/marketStatus`, `/api/allIndices`).
+- Automatic cookie bootstrap, rotating browser headers, and graceful fallback if temporarily rate-limited.
+
+---
+
+### C. Programmatic Python API
+
+```python
+from txcore.algotrade import AlgoTrade, AlgoTradeConfig
+from txcore.providers.indian_provider import IndianMarketDataProvider
+from txcore.strategies.evaluator import StrategyEvaluator
+from txcore.strategies.pdf_price_action import PDFPriceActionStrategy
+
+# 1. Initialize AlgoTrade with Date Range for Past Historical Strategy Evaluation
+config = AlgoTradeConfig(
+    algo_name="Ishaq strategy 1",
+    market="INDIAN_EQUITY",
+    timeframe="5m",
+    symbols=["RELIANCE", "TCS"],
+    start_date="2026-09-20",
+    end_date="2026-09-26",
+    evaluate_strategy=True,
+    risk_reward_ratio=1.5,
+    chart_enabled=True,
+)
+provider = IndianMarketDataProvider()
+algo = AlgoTrade(config=config, provider=provider)
+
+# 2. Run Historical Evaluation Walk-Forward Replay
+results = algo.run_cycle()
+for res in results:
+    report = res["evaluation"]
+    print(report.to_summary_string())
+
+# 3. Direct Single-Symbol Historical Evaluation
+evaluator = StrategyEvaluator(risk_reward_ratio=1.5)
+df = provider.get_cached_candles("RELIANCE", timeframe="5m", start_date="2026-09-01", end_date="2026-09-25")
+report = evaluator.evaluate(df, symbol="RELIANCE", timeframe="5m")
+print(report.to_summary_string())
+
+algo.close()
+```
+
+---
+
+### D. Command-Line Interface (`run_algotrade.py` & `txcore.cli`)
+
+```bash
+# 1. Live Indian Market Snapshot (Session, VIX, Breadth, Core Benchmarks, Top Sectors):
+python run_algotrade.py --snapshot
+
+# 2. Historical Strategy Testing, Simulation & Backtesting (Walk-Forward Replay):
+# Test and evaluate strategy on past dates for a stock:
+python run_algotrade.py --name "Ishaq strategy 1" --stock RELIANCE --start-date 2026-09-01 --end-date 2026-09-25 --evaluate --no-open
+
+# Test on Index over past time window:
+python run_algotrade.py --name "NiftyBacktest" --index NIFTY --start-date 2026-09-20 --end-date 2026-09-26 --evaluate --no-open
+
+# Parallel multi-stock backtest evaluation:
+python run_algotrade.py --name "PortfolioBacktest" --stock "RELIANCE,TCS,INFY" --start-date 2026-09-20 --end-date 2026-09-26 --evaluate --no-open
+
+# 3. Generate Interactive TradingView HTML Chart (with S/R levels, HUD inspector, audit table):
+python run_algotrade.py --stock RELIANCE --chart
+python run_algotrade.py --index NIFTY --chart -t 15m -b 100
+python run_algotrade.py --stock TCS --chart --no-open
+python run_algotrade.py --stock RELIANCE --chart --send-telegram
+
+# 4. Analyze Trend Structure, EMAs & Support/Resistance Levels (Supports Past Date Ranges):
+python run_algotrade.py --stock RELIANCE --trend
+python run_algotrade.py --index NIFTY --trend -t 15m
+python run_algotrade.py --stock HDFCBANK --start-date 2026-09-10 --end-date 2026-09-20 --trend
+
+# 5. Terminal Pattern Recognition & Setup Audit on Past Data:
+python run_algotrade.py --stock RELIANCE --audit
+python run_algotrade.py --index NIFTY --audit -t 5m -b 80
+python run_algotrade.py --stock INFY --start-date 2026-09-10 --end-date 2026-09-20 --audit
+
+# 6. Scan for Actionable Price Action Entry Signals:
+python run_algotrade.py --index NIFTY --scan-signal
+python run_algotrade.py --stock RELIANCE --scan-signal -t 5m --send-telegram
+
+# 7. Batch Scan Entire Monitored Indian Watchlist:
+python run_algotrade.py --scan-watchlist
+python run_algotrade.py --scan-watchlist -t 5m -b 60 --send-telegram
+
+# 8. View Real-Time Market Breadth & Sector Rankings:
+python run_algotrade.py --breadth
+python run_algotrade.py --sectors
+
+# 9. Export Extracted Candlestick Data to CSV:
+python run_algotrade.py --stock RELIANCE -t 5m -b 100 --csv exports/reliance_5m.csv
+python run_algotrade.py --index NIFTY -t 15m -b 200 --csv exports/nifty_15m.csv
+```
+
 
 
 

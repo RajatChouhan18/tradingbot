@@ -59,3 +59,31 @@ Each running pipeline instance is called an **AlgoTrade** with:
 - Full configuration (`AlgoTradeConfig`: market, symbols, strategy, indicators, patterns, endpoints)
 - Ability to spin up multiple AlgoTrade processes concurrently and monitor them independently
 - Parallel multi-symbol scanning engine with non-blocking audit & dispatch
+
+## Code Index & AI Navigation Memory (Mandatory)
+
+The codebase is indexed with specialized markdown code indexes to reduce token consumption and provide deep workflow and symbol maps.
+**RULE FOR AI AGENTS**: Before reading or modifying source files in any layer or module, ALWAYS consult the relevant code index first to understand interfaces, function signatures, dependencies, and workflows without loading thousands of lines of raw source code into context.
+
+### Code Index Registry
+- Master Root Index: `CODE_INDEX.md`
+- Backend Core Index: `txcore/CODE_INDEX_TXCORE.md`
+- Services Layer Index: `txcore/CODE_INDEX_SERVICES.md`
+- AlgoTrade Orchestrator Index: `txcore/CODE_INDEX_ALGOTRADE.md`
+- Models Module Index: `txcore/models/CODE_INDEX_MODELS.md`
+- Analysis Module Index: `txcore/analysis/CODE_INDEX_ANALYSIS.md`
+- Providers Module Index: `txcore/providers/CODE_INDEX_PROVIDERS.md`
+- Strategies Module Index: `txcore/strategies/CODE_INDEX_STRATEGIES.md`
+- Visualization Module Index: `txcore/visualization/CODE_INDEX_VISUALIZATION.md`
+- Audit Module Index: `txcore/audit/CODE_INDEX_AUDIT.md`
+- Execution Module Index: `txcore/execution/CODE_INDEX_EXECUTION.md`
+- Filters Module Index: `txcore/filters/CODE_INDEX_FILTERS.md`
+- Config Module Index: `config/CODE_INDEX_CONFIG.md`
+- Frontend Repository Index: `frontend/CODE_INDEX_FRONTEND.md`
+- Frontend Components Index: `frontend/src/components/CODE_INDEX_COMPONENTS.md`
+
+### Maintenance Guarantee
+Whenever any module, service, strategy, or UI component is modified, added, or refactored:
+1. Update that component's/module's `CODE_INDEX_<NAME>.md` with the new signatures, schemas, or behaviors.
+2. Update `CODE_INDEX.md` (and the parent repository index) if higher-level architecture or endpoints changed.
+

@@ -27,6 +27,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { api } from '../../api';
+import { CandleIconSvg, IndicatorIconSvg } from './PatternIndicatorIcons';
 
 const MARKETS = [
   { id: 'INDIAN_EQUITY', label: 'NSE (India)', defaultSymbol: 'RELIANCE', exchange: 'NSE' },
@@ -94,17 +95,36 @@ const TIMEFRAMES = [
   { value: '1M', label: '1M (1 Month Monthly)' },
 ];
 
-const OVERLAY_OPTIONS = [
-  { id: 'EMA_9', label: 'EMA 9 (Fast Trend)', color: '#38bdf8' },
-  { id: 'EMA_21', label: 'EMA 21 (Short Trend)', color: '#a855f7' },
-  { id: 'EMA_50', label: 'EMA 50 (Medium Trend)', color: '#f59e0b' },
-  { id: 'EMA_200', label: 'EMA 200 (Macro Trend)', color: '#f43f5e' },
-  { id: 'SMA_20', label: 'SMA 20 (Mean Baseline)', color: '#60a5fa' },
-  { id: 'VWAP', label: 'VWAP (Volume Weighted Avg Price)', color: '#fbbf24' },
-  { id: 'BB', label: 'Bollinger Bands (20, 2)', color: '#3b82f6' },
+const INDICATOR_OPTIONS = [
+  // --- Moving Averages & Trend Baselines ---
+  { id: 'EMA_9', label: 'EMA 9 (Fast Trend)', category: 'Moving Averages', color: '#38bdf8' },
+  { id: 'EMA_21', label: 'EMA 21 (Short Trend)', category: 'Moving Averages', color: '#a855f7' },
+  { id: 'EMA_50', label: 'EMA 50 (Medium Trend)', category: 'Moving Averages', color: '#f59e0b' },
+  { id: 'EMA_200', label: 'EMA 200 (Macro Trend)', category: 'Moving Averages', color: '#f43f5e' },
+  { id: 'SMA_20', label: 'SMA 20 (Mean Baseline)', category: 'Moving Averages', color: '#60a5fa' },
+  { id: 'SMA_50', label: 'SMA 50 (Medium Baseline)', category: 'Moving Averages', color: '#fb923c' },
+  { id: 'SMA_200', label: 'SMA 200 (Golden/Death Cross)', category: 'Moving Averages', color: '#e11d48' },
+  // --- Price Envelopes & Overlays ---
+  { id: 'VWAP', label: 'VWAP (Volume Weighted)', category: 'Price Bands & Envelopes', color: '#fbbf24' },
+  { id: 'BB', label: 'Bollinger Bands (20, 2)', category: 'Price Bands & Envelopes', color: '#3b82f6' },
+  { id: 'SUPERTREND', label: 'Supertrend (10, 3)', category: 'Trend Followers', color: '#10b981' },
+  { id: 'KELTNER', label: 'Keltner Channels (20, 2)', category: 'Price Bands & Envelopes', color: '#06b6d4' },
+  { id: 'DONCHIAN', label: 'Donchian Channels (20)', category: 'Price Bands & Envelopes', color: '#8b5cf6' },
+  { id: 'PSAR', label: 'Parabolic SAR (0.02, 0.2)', category: 'Trend Followers', color: '#ec4899' },
+  { id: 'PIVOT_POINTS', label: 'Pivot Points (Classic)', category: 'Support & Resistance', color: '#eab308' },
+  { id: 'ZIGZAG', label: 'ZigZag Swing Pivots', category: 'Support & Resistance', color: '#14b8a6' },
+  { id: 'ICHIMOKU', label: 'Ichimoku Cloud', category: 'Trend Followers', color: '#6366f1' },
+  // --- Oscillators & Momentum ---
+  { id: 'RSI', label: 'RSI (14 - Momentum)', category: 'Oscillators', color: '#c084fc' },
+  { id: 'MACD', label: 'MACD (12, 26, 9)', category: 'Oscillators', color: '#0284c7' },
+  { id: 'STOCH_RSI', label: 'Stochastic RSI (14, 14, 3, 3)', category: 'Oscillators', color: '#f43f5e' },
+  { id: 'ADX', label: 'ADX / DMI (14)', category: 'Oscillators', color: '#d97706' },
+  { id: 'ATR', label: 'ATR (14 - Volatility)', category: 'Volatility & Volume', color: '#14b8a6' },
+  { id: 'OBV', label: 'OBV (On-Balance Volume)', category: 'Volatility & Volume', color: '#84cc16' },
 ];
+const OVERLAY_OPTIONS = INDICATOR_OPTIONS;
 
-const PATTERN_OPTIONS = [
+const CANDLE_OPTIONS = [
   { id: 'ALL', label: 'All Detected Patterns' },
   { id: 'ENGULFING_BULLISH', label: 'Bullish Engulfing' },
   { id: 'ENGULFING_BEARISH', label: 'Bearish Engulfing' },
@@ -124,13 +144,14 @@ const PATTERN_OPTIONS = [
   { id: 'PIERCING_LINE', label: 'Piercing Line' },
   { id: 'DARK_CLOUD_COVER', label: 'Dark Cloud Cover' },
 ];
+const PATTERN_OPTIONS = CANDLE_OPTIONS;
 
 export default function TerminalConfigScreen() {
   const [defaultMarket, setDefaultMarket] = useState('INDIAN_EQUITY');
   const [defaultSymbol, setDefaultSymbol] = useState('RELIANCE');
   const [defaultTimeframe, setDefaultTimeframe] = useState('5m');
-  const [selectedOverlays, setSelectedOverlays] = useState(['EMA_9', 'EMA_21', 'VWAP']);
-  const [selectedPatterns, setSelectedPatterns] = useState(['ALL']);
+  const [selectedIndicators, setSelectedIndicators] = useState(['EMA_9', 'EMA_21', 'VWAP']);
+  const [selectedCandles, setSelectedCandles] = useState(['ALL']);
 
   const [catalogSymbols, setCatalogSymbols] = useState(DEFAULT_SYMBOLS_BY_MARKET['INDIAN_EQUITY']);
   const [loading, setLoading] = useState(false);
@@ -147,11 +168,13 @@ export default function TerminalConfigScreen() {
           setDefaultMarket(mkt);
           setDefaultSymbol(cfg.default_symbol || 'RELIANCE');
           setDefaultTimeframe(cfg.default_timeframe || '5m');
-          if (cfg.default_overlays) {
-            setSelectedOverlays(cfg.default_overlays.split(',').map((s) => s.trim()));
+          const indics = cfg.default_indicators || cfg.default_overlays;
+          if (indics) {
+            setSelectedIndicators(indics.split(',').map((s) => s.trim()));
           }
-          if (cfg.default_patterns) {
-            setSelectedPatterns(cfg.default_patterns.split(',').map((s) => s.trim()));
+          const cands = cfg.default_candles || cfg.default_patterns;
+          if (cands) {
+            setSelectedCandles(cands.split(',').map((s) => s.trim()));
           }
         }
       })
@@ -191,8 +214,10 @@ export default function TerminalConfigScreen() {
         default_market: defaultMarket,
         default_symbol: defaultSymbol,
         default_timeframe: defaultTimeframe,
-        default_overlays: selectedOverlays.join(','),
-        default_patterns: selectedPatterns.join(','),
+        default_indicators: selectedIndicators.join(','),
+        default_overlays: selectedIndicators.join(','),
+        default_candles: selectedCandles.join(','),
+        default_patterns: selectedCandles.join(','),
       });
       setFeedback({ type: 'success', message: 'Terminal preferences saved successfully. MarketView will automatically open with these settings.' });
     } catch (err) {
@@ -206,8 +231,8 @@ export default function TerminalConfigScreen() {
     setDefaultMarket('INDIAN_EQUITY');
     setDefaultSymbol('RELIANCE');
     setDefaultTimeframe('5m');
-    setSelectedOverlays(['EMA_9', 'EMA_21', 'VWAP']);
-    setSelectedPatterns(['ALL']);
+    setSelectedIndicators(['EMA_9', 'EMA_21', 'VWAP']);
+    setSelectedCandles(['ALL']);
     setFeedback({ type: 'info', message: 'Preferences reset to factory defaults. Click Save to persist.' });
   };
 
@@ -319,23 +344,23 @@ export default function TerminalConfigScreen() {
             </Card>
           </Grid>
 
-          {/* 2. Technical Overlays Defaults Card */}
+          {/* 2. Technical Indicators Defaults Card */}
           <Grid size={{ xs: 12, md: 6 }}>
             <Card sx={{ p: 2.5, bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', borderRadius: 2.5, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
                 <Sliders size={18} color="#38bdf8" />
                 <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800 }}>
-                  Active Technical Overlays ({selectedOverlays.length})
+                  Active Technical Indicators ({selectedIndicators.length})
                 </Typography>
               </Box>
 
               <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 2 }}>
-                Select mathematical overlays and trend indicators to synthesize immediately onto the chart canvas.
+                Select mathematical indicators and trend lines to synthesize immediately onto the chart canvas.
               </Typography>
 
-              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1 }}>
-                {OVERLAY_OPTIONS.map((opt) => {
-                  const isChecked = selectedOverlays.includes(opt.id);
+              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 1 }}>
+                {INDICATOR_OPTIONS.map((opt) => {
+                  const isChecked = selectedIndicators.includes(opt.id);
                   return (
                     <FormControlLabel
                       key={opt.id}
@@ -345,21 +370,24 @@ export default function TerminalConfigScreen() {
                           checked={isChecked}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedOverlays((prev) => [...prev, opt.id]);
+                              setSelectedIndicators((prev) => [...prev, opt.id]);
                             } else {
-                              setSelectedOverlays((prev) => prev.filter((id) => id !== opt.id));
+                              setSelectedIndicators((prev) => prev.filter((id) => id !== opt.id));
                             }
                           }}
                           sx={{ color: opt.color, '&.Mui-checked': { color: opt.color } }}
                         />
                       }
                       label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: opt.color }} />
-                          <Typography sx={{ fontSize: '0.78rem', fontWeight: isChecked ? 700 : 500 }}>{opt.label}</Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1, pr: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                            <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: opt.color }} />
+                            <Typography sx={{ fontSize: '0.78rem', fontWeight: isChecked ? 700 : 500 }}>{opt.label}</Typography>
+                          </Box>
+                          <IndicatorIconSvg id={opt.id} color={opt.color} size={22} />
                         </Box>
                       }
-                      sx={{ mx: 0 }}
+                      sx={{ mx: 0, width: '100%' }}
                     />
                   );
                 })}
@@ -367,27 +395,27 @@ export default function TerminalConfigScreen() {
             </Card>
           </Grid>
 
-          {/* 3. Candlestick Patterns Defaults Card */}
+          {/* 3. Candle Pattern Recognition Defaults Card */}
           <Grid size={{ xs: 12 }}>
             <Card sx={{ p: 2.5, bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', borderRadius: 2.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                   <Layers size={18} color="#32D74B" />
                   <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800 }}>
-                    Default Candlestick Pattern Filters ({selectedPatterns.includes('ALL') ? 'All' : selectedPatterns.length})
+                    Default Candle Pattern Filters ({selectedCandles.includes('ALL') ? 'All' : selectedCandles.length})
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Button
                     size="small"
-                    onClick={() => setSelectedPatterns(['ALL'])}
+                    onClick={() => setSelectedCandles(['ALL'])}
                     sx={{ fontSize: '0.72rem', textTransform: 'none', color: '#32D74B' }}
                   >
                     Select All
                   </Button>
                   <Button
                     size="small"
-                    onClick={() => setSelectedPatterns([])}
+                    onClick={() => setSelectedCandles([])}
                     sx={{ fontSize: '0.72rem', textTransform: 'none', color: '#f43f5e' }}
                   >
                     Clear All
@@ -399,9 +427,9 @@ export default function TerminalConfigScreen() {
                 Choose which algorithmic candlestick patterns should automatically trigger chart markers and telemetry badges upon load.
               </Typography>
 
-              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 1 }}>
-                {PATTERN_OPTIONS.map((p) => {
-                  const isChecked = selectedPatterns.includes(p.id);
+              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1 }}>
+                {CANDLE_OPTIONS.map((p) => {
+                  const isChecked = selectedCandles.includes(p.id);
                   return (
                     <FormControlLabel
                       key={p.id}
@@ -411,12 +439,12 @@ export default function TerminalConfigScreen() {
                           checked={isChecked}
                           onChange={(e) => {
                             if (p.id === 'ALL') {
-                              setSelectedPatterns(e.target.checked ? ['ALL'] : []);
+                              setSelectedCandles(e.target.checked ? ['ALL'] : []);
                             } else {
                               if (e.target.checked) {
-                                setSelectedPatterns((prev) => [...prev.filter((id) => id !== 'ALL'), p.id]);
+                                setSelectedCandles((prev) => [...prev.filter((id) => id !== 'ALL'), p.id]);
                               } else {
-                                setSelectedPatterns((prev) => prev.filter((id) => id !== p.id));
+                                setSelectedCandles((prev) => prev.filter((id) => id !== p.id));
                               }
                             }
                           }}
@@ -424,11 +452,14 @@ export default function TerminalConfigScreen() {
                         />
                       }
                       label={
-                        <Typography sx={{ fontSize: '0.76rem', color: isChecked ? 'text.primary' : 'text.secondary', fontWeight: isChecked ? 700 : 500 }}>
-                          {p.label}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1, pr: 0.5 }}>
+                          <Typography sx={{ fontSize: '0.76rem', color: isChecked ? 'text.primary' : 'text.secondary', fontWeight: isChecked ? 700 : 500 }}>
+                            {p.label}
+                          </Typography>
+                          <CandleIconSvg id={p.id} size={18} />
+                        </Box>
                       }
-                      sx={{ mx: 0 }}
+                      sx={{ mx: 0, width: '100%' }}
                     />
                   );
                 })}

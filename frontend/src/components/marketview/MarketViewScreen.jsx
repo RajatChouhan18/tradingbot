@@ -46,6 +46,7 @@ import {
   Eye,
   Info,
   Maximize2,
+  CandlestickChart,
 } from 'lucide-react';
 import {
   createChart,
@@ -57,6 +58,7 @@ import {
   CrosshairMode,
 } from 'lightweight-charts';
 import { api } from '../../api';
+import { CandleIconSvg, IndicatorIconSvg } from './PatternIndicatorIcons';
 
 const MARKETS = [
   { id: 'INDIAN_EQUITY', label: 'NSE (India)', defaultSymbol: 'RELIANCE', exchange: 'NSE' },
@@ -149,17 +151,36 @@ const TIMEFRAME_OPTIONS = [
   },
 ];
 
-const OVERLAY_OPTIONS = [
-  { id: 'EMA_9', label: 'EMA 9', color: '#38bdf8' },
-  { id: 'EMA_21', label: 'EMA 21', color: '#a855f7' },
-  { id: 'EMA_50', label: 'EMA 50', color: '#f59e0b' },
-  { id: 'EMA_200', label: 'EMA 200', color: '#f43f5e' },
-  { id: 'SMA_20', label: 'SMA 20', color: '#60a5fa' },
-  { id: 'VWAP', label: 'VWAP', color: '#fbbf24' },
-  { id: 'BB', label: 'Bollinger Bands (20, 2)', color: '#3b82f6' },
+const INDICATOR_OPTIONS = [
+  // --- Moving Averages & Trend Baselines ---
+  { id: 'EMA_9', label: 'EMA 9 (Fast Trend)', category: 'Moving Averages', color: '#38bdf8' },
+  { id: 'EMA_21', label: 'EMA 21 (Short Trend)', category: 'Moving Averages', color: '#a855f7' },
+  { id: 'EMA_50', label: 'EMA 50 (Medium Trend)', category: 'Moving Averages', color: '#f59e0b' },
+  { id: 'EMA_200', label: 'EMA 200 (Macro Trend)', category: 'Moving Averages', color: '#f43f5e' },
+  { id: 'SMA_20', label: 'SMA 20 (Mean Baseline)', category: 'Moving Averages', color: '#60a5fa' },
+  { id: 'SMA_50', label: 'SMA 50 (Medium Baseline)', category: 'Moving Averages', color: '#fb923c' },
+  { id: 'SMA_200', label: 'SMA 200 (Golden/Death Cross)', category: 'Moving Averages', color: '#e11d48' },
+  // --- Price Envelopes & Overlays ---
+  { id: 'VWAP', label: 'VWAP (Volume Weighted)', category: 'Price Bands & Envelopes', color: '#fbbf24' },
+  { id: 'BB', label: 'Bollinger Bands (20, 2)', category: 'Price Bands & Envelopes', color: '#3b82f6' },
+  { id: 'SUPERTREND', label: 'Supertrend (10, 3)', category: 'Trend Followers', color: '#10b981' },
+  { id: 'KELTNER', label: 'Keltner Channels (20, 2)', category: 'Price Bands & Envelopes', color: '#06b6d4' },
+  { id: 'DONCHIAN', label: 'Donchian Channels (20)', category: 'Price Bands & Envelopes', color: '#8b5cf6' },
+  { id: 'PSAR', label: 'Parabolic SAR (0.02, 0.2)', category: 'Trend Followers', color: '#ec4899' },
+  { id: 'PIVOT_POINTS', label: 'Pivot Points (Classic)', category: 'Support & Resistance', color: '#eab308' },
+  { id: 'ZIGZAG', label: 'ZigZag Swing Pivots', category: 'Support & Resistance', color: '#14b8a6' },
+  { id: 'ICHIMOKU', label: 'Ichimoku Cloud', category: 'Trend Followers', color: '#6366f1' },
+  // --- Oscillators & Momentum ---
+  { id: 'RSI', label: 'RSI (14 - Momentum)', category: 'Oscillators', color: '#c084fc' },
+  { id: 'MACD', label: 'MACD (12, 26, 9)', category: 'Oscillators', color: '#0284c7' },
+  { id: 'STOCH_RSI', label: 'Stochastic RSI (14, 14, 3, 3)', category: 'Oscillators', color: '#f43f5e' },
+  { id: 'ADX', label: 'ADX / DMI (14)', category: 'Oscillators', color: '#d97706' },
+  { id: 'ATR', label: 'ATR (14 - Volatility)', category: 'Volatility & Volume', color: '#14b8a6' },
+  { id: 'OBV', label: 'OBV (On-Balance Volume)', category: 'Volatility & Volume', color: '#84cc16' },
 ];
+const OVERLAY_OPTIONS = INDICATOR_OPTIONS;
 
-const CANDLESTICK_PATTERNS = [
+const CANDLE_PATTERNS = [
   { id: 'ALL', label: 'All Detected Patterns' },
   { id: 'ENGULFING_BULLISH', label: 'Bullish Engulfing' },
   { id: 'ENGULFING_BEARISH', label: 'Bearish Engulfing' },
@@ -179,6 +200,7 @@ const CANDLESTICK_PATTERNS = [
   { id: 'PIERCING_LINE', label: 'Piercing Line' },
   { id: 'DARK_CLOUD_COVER', label: 'Dark Cloud Cover' },
 ];
+const CANDLESTICK_PATTERNS = CANDLE_PATTERNS;
 
 const getPrecision = (mkt) => (['CRYPTO', 'FOREX', 'MCX'].includes(mkt) ? 6 : 4);
 const formatPrice = (price, mkt) => {
@@ -199,13 +221,13 @@ export default function MarketViewScreen() {
   const [endDate, setEndDate] = useState('');
   const [catalogSymbols, setCatalogSymbols] = useState(DEFAULT_SYMBOLS_BY_MARKET['INDIAN_EQUITY']);
   
-  // Active Overlays (Clean default: EMA 9, EMA 21, VWAP)
-  const [selectedOverlays, setSelectedOverlays] = useState(['EMA_9', 'EMA_21', 'VWAP']);
-  const [overlayMenuAnchor, setOverlayMenuAnchor] = useState(null);
+  // Active Indicators (Clean default: EMA 9, EMA 21, VWAP)
+  const [selectedIndicators, setSelectedIndicators] = useState(['EMA_9', 'EMA_21', 'VWAP']);
+  const [indicatorMenuAnchor, setIndicatorMenuAnchor] = useState(null);
 
-  // Dedicated Candlestick Patterns Filter
-  const [selectedPatterns, setSelectedPatterns] = useState(['ALL']);
-  const [patternMenuAnchor, setPatternMenuAnchor] = useState(null);
+  // Dedicated Candles Pattern Recognition Filter
+  const [selectedCandles, setSelectedCandles] = useState(['ALL']);
+  const [candleMenuAnchor, setCandleMenuAnchor] = useState(null);
 
   // Response Data & Diagnostics State
   const [loading, setLoading] = useState(false);
@@ -259,8 +281,8 @@ export default function MarketViewScreen() {
     const targetTimeframe = customParams.timeframe || timeframe;
     const targetMode = customParams.mode || mode;
     const targetLookback = customParams.lookback !== undefined ? customParams.lookback : lookback;
-    const targetOverlays = customParams.overlays !== undefined ? customParams.overlays : selectedOverlays;
-    const targetPatterns = customParams.patterns !== undefined ? customParams.patterns : selectedPatterns;
+    const targetIndicators = customParams.indicators !== undefined ? customParams.indicators : (customParams.overlays !== undefined ? customParams.overlays : selectedIndicators);
+    const targetCandles = customParams.candles !== undefined ? customParams.candles : (customParams.patterns !== undefined ? customParams.patterns : selectedCandles);
 
     if (!targetSymbol) return;
 
@@ -269,9 +291,9 @@ export default function MarketViewScreen() {
     const fetchStart = performance.now();
 
     try {
-      const activeOverlayList = [...targetOverlays];
-      if (targetPatterns.length > 0 && !activeOverlayList.includes('PATTERNS')) {
-        activeOverlayList.push('PATTERNS');
+      const activeIndicatorList = [...targetIndicators];
+      if (targetCandles.length > 0 && !activeIndicatorList.includes('PATTERNS') && !activeIndicatorList.includes('CANDLES')) {
+        activeIndicatorList.push('PATTERNS');
       }
 
       const params = {
@@ -282,7 +304,9 @@ export default function MarketViewScreen() {
         lookback: targetMode === 'LIVE' ? targetLookback : undefined,
         startDate: targetMode === 'HISTORICAL' && startDate ? new Date(startDate).toISOString() : undefined,
         endDate: targetMode === 'HISTORICAL' && endDate ? new Date(endDate).toISOString() : undefined,
-        overlays: activeOverlayList.join(','),
+        indicators: activeIndicatorList.join(','),
+        overlays: activeIndicatorList.join(','),
+        candles: targetCandles.join(','),
       };
 
       const res = await api.getMarketViewData(params);
@@ -306,13 +330,13 @@ export default function MarketViewScreen() {
       setQueryHistory((prev) => [historyEntry, ...prev.slice(0, 49)]);
 
       // Render chart
-      renderLightweightChart(res, fetchLatency, targetPatterns);
+      renderLightweightChart(res, fetchLatency, targetCandles, targetIndicators);
     } catch (err) {
       setErrorMsg(err.message || 'Failed to fetch market data from providers');
     } finally {
       setLoading(false);
     }
-  }, [symbol, timeframe, selectedMarket, mode, lookback, startDate, endDate, selectedOverlays, selectedPatterns]);
+  }, [symbol, timeframe, selectedMarket, mode, lookback, startDate, endDate, selectedIndicators, selectedCandles]);
 
   // Handle Market Switch (Terminal Chart only)
   const handleMarketChange = async (newMarket) => {
@@ -404,15 +428,19 @@ export default function MarketViewScreen() {
           const mkt = cfg.default_market;
           const sym = cfg.default_symbol || (DEFAULT_SYMBOLS_BY_MARKET[mkt]?.[0]?.symbol || 'RELIANCE');
           const tf = cfg.default_timeframe || '5m';
-          const ovs = cfg.default_overlays ? cfg.default_overlays.split(',').map((s) => s.trim()) : ['EMA_9', 'EMA_21', 'VWAP'];
-          const pats = cfg.default_patterns ? cfg.default_patterns.split(',').map((s) => s.trim()) : ['ALL'];
+          const indics = (cfg.default_indicators || cfg.default_overlays)
+            ? (cfg.default_indicators || cfg.default_overlays).split(',').map((s) => s.trim())
+            : ['EMA_9', 'EMA_21', 'VWAP'];
+          const cands = (cfg.default_candles || cfg.default_patterns)
+            ? (cfg.default_candles || cfg.default_patterns).split(',').map((s) => s.trim())
+            : ['ALL'];
 
           setSelectedMarket(mkt);
           setSymbol(sym);
           setTimeframe(tf);
-          setSelectedOverlays(ovs);
-          setSelectedPatterns(pats);
-          fetchData({ market: mkt, symbol: sym, timeframe: tf, overlays: ovs, patterns: pats });
+          setSelectedIndicators(indics);
+          setSelectedCandles(cands);
+          fetchData({ market: mkt, symbol: sym, timeframe: tf, indicators: indics, candles: cands });
         } else {
           fetchData();
         }
@@ -540,8 +568,8 @@ export default function MarketViewScreen() {
     }
   };
 
-  // Lightweight Charts Renderer with Strict Institutional Asset Precision
-  const renderLightweightChart = (data, fetchLatencyMs, activePatterns = selectedPatterns, activeOverlays = selectedOverlays) => {
+  // Lightweight Charts Renderer with Strict Institutional Asset Precision & Multi-Pane Architecture
+  const renderLightweightChart = (data, fetchLatencyMs, activeCandles = selectedCandles, activeIndicators = selectedIndicators) => {
     if (!chartContainerRef.current || !data?.candles?.length) return;
 
     const renderStart = performance.now();
@@ -562,10 +590,21 @@ export default function MarketViewScreen() {
       markersPluginRef.current = null;
     }
 
+    // Determine active sub-pane oscillators count
+    const activeSubPanes = [];
+    if (activeIndicators.includes('RSI')) activeSubPanes.push('RSI');
+    if (activeIndicators.includes('MACD')) activeSubPanes.push('MACD');
+    if (activeIndicators.includes('STOCH_RSI')) activeSubPanes.push('STOCH_RSI');
+    if (activeIndicators.includes('ADX')) activeSubPanes.push('ADX');
+    if (activeIndicators.includes('ATR')) activeSubPanes.push('ATR');
+    if (activeIndicators.includes('OBV')) activeSubPanes.push('OBV');
+
+    const calculatedHeight = 480 + (activeSubPanes.length * 130);
+
     const container = chartContainerRef.current;
     const chart = createChart(container, {
       autoSize: true,
-      height: 500,
+      height: calculatedHeight,
       layout: {
         background: { type: ColorType.Solid, color: '#1E1E1E' },
         textColor: '#98989D',
@@ -581,10 +620,6 @@ export default function MarketViewScreen() {
       },
       rightPriceScale: {
         borderColor: '#2C2C2E',
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.22,
-        },
       },
       timeScale: {
         borderColor: '#2C2C2E',
@@ -595,7 +630,7 @@ export default function MarketViewScreen() {
 
     chartInstanceRef.current = chart;
 
-    // 1. Candlestick Series with Exact Decimal Precision
+    // 1. Candlestick Series with Strict Precision (Pane 0)
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#32D74B',
       downColor: '#FF453A',
@@ -607,7 +642,7 @@ export default function MarketViewScreen() {
         precision: prec,
         minMove: minPriceMove,
       },
-    });
+    }, 0);
     candleSeriesRef.current = candleSeries;
 
     // Format candle records for Lightweight Charts (timestamp in unix seconds)
@@ -648,11 +683,11 @@ export default function MarketViewScreen() {
       });
     }
 
-    // 2. Volume Histogram Overlay Series
+    // 2. Volume Histogram Overlay Series (Pane 0 with lower band margin)
     const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
-    });
+    }, 0);
     volumeSeriesRef.current = volumeSeries;
 
     chart.priceScale('volume').applyOptions({
@@ -669,11 +704,11 @@ export default function MarketViewScreen() {
     }));
     volumeSeries.setData(volumeData);
 
-    // 3. Technical Overlays Lines (Using overlays dictionary from ProviderTechnicals)
-    const overlaysDict = data.technicals?.overlays || {};
+    // 3. Technical Indicators (Pane 0 Overlays + Dedicated Sub-Panes)
+    const indicatorsDict = data.technicals?.indicators || data.technicals?.overlays || {};
 
-    const addLineOverlay = (seriesName, color, values) => {
-      if (!values || !values.length) return;
+    const addLineIndicator = (seriesName, color, values, paneIdx = 0, customPrec = prec, customMinMove = minPriceMove) => {
+      if (!values || !values.length) return null;
       const lineSeries = chart.addSeries(LineSeries, {
         color,
         lineWidth: 1.5,
@@ -681,10 +716,10 @@ export default function MarketViewScreen() {
         priceLineVisible: false,
         priceFormat: {
           type: 'price',
-          precision: prec,
-          minMove: minPriceMove,
+          precision: customPrec,
+          minMove: customMinMove,
         },
-      });
+      }, paneIdx);
 
       const linePoints = [];
       data.candles.forEach((c, idx) => {
@@ -698,26 +733,143 @@ export default function MarketViewScreen() {
       });
       const lineMap = new Map();
       linePoints.forEach((p) => lineMap.set(p.time, p));
-      lineSeries.setData(Array.from(lineMap.values()).sort((a, b) => a.time - b.time));
+      const sortedPoints = Array.from(lineMap.values()).sort((a, b) => a.time - b.time);
+      if (sortedPoints.length > 0) {
+        lineSeries.setData(sortedPoints);
+      }
+      return lineSeries;
     };
 
-    if (activeOverlays.includes('EMA_9')) addLineOverlay('EMA 9', '#38bdf8', overlaysDict['EMA_9']);
-    if (activeOverlays.includes('EMA_21')) addLineOverlay('EMA 21', '#a855f7', overlaysDict['EMA_21']);
-    if (activeOverlays.includes('EMA_50')) addLineOverlay('EMA 50', '#f59e0b', overlaysDict['EMA_50']);
-    if (activeOverlays.includes('EMA_200')) addLineOverlay('EMA 200', '#f43f5e', overlaysDict['EMA_200']);
-    if (activeOverlays.includes('SMA_20')) addLineOverlay('SMA 20', '#60a5fa', overlaysDict['SMA_20']);
-    if (activeOverlays.includes('VWAP')) addLineOverlay('VWAP', '#fbbf24', overlaysDict['VWAP']);
-    if (activeOverlays.includes('BB')) {
-      addLineOverlay('BB Upper', '#3b82f6', overlaysDict['BB_UPPER']);
-      addLineOverlay('BB Lower', '#3b82f6', overlaysDict['BB_LOWER']);
+    const addHistogramIndicator = (seriesName, values, paneIdx = 0) => {
+      if (!values || !values.length) return null;
+      const histSeries = chart.addSeries(HistogramSeries, {
+        title: seriesName,
+        priceLineVisible: false,
+      }, paneIdx);
+
+      const pts = [];
+      data.candles.forEach((c, idx) => {
+        const val = values[idx];
+        if (val !== null && val !== undefined && !isNaN(val)) {
+          pts.push({
+            time: Math.floor(new Date(c.timestamp).getTime() / 1000),
+            value: Number(val),
+            color: Number(val) >= 0 ? '#32D74B' : '#FF453A',
+          });
+        }
+      });
+      const m = new Map();
+      pts.forEach((p) => m.set(p.time, p));
+      const sortedHist = Array.from(m.values()).sort((a, b) => a.time - b.time);
+      if (sortedHist.length > 0) {
+        histSeries.setData(sortedHist);
+      }
+      return histSeries;
+    };
+
+    // --- On-Chart Moving Averages & Trend Envelopes (Pane 0) ---
+    if (activeIndicators.includes('EMA_9')) addLineIndicator('EMA 9', '#38bdf8', indicatorsDict['EMA_9'], 0);
+    if (activeIndicators.includes('EMA_21')) addLineIndicator('EMA 21', '#a855f7', indicatorsDict['EMA_21'], 0);
+    if (activeIndicators.includes('EMA_50')) addLineIndicator('EMA 50', '#f59e0b', indicatorsDict['EMA_50'], 0);
+    if (activeIndicators.includes('EMA_200')) addLineIndicator('EMA 200', '#f43f5e', indicatorsDict['EMA_200'], 0);
+    if (activeIndicators.includes('SMA_20')) addLineIndicator('SMA 20', '#60a5fa', indicatorsDict['SMA_20'], 0);
+    if (activeIndicators.includes('SMA_50')) addLineIndicator('SMA 50', '#fb923c', indicatorsDict['SMA_50'], 0);
+    if (activeIndicators.includes('SMA_200')) addLineIndicator('SMA 200', '#e11d48', indicatorsDict['SMA_200'], 0);
+    if (activeIndicators.includes('VWAP')) addLineIndicator('VWAP', '#fbbf24', indicatorsDict['VWAP'], 0);
+    if (activeIndicators.includes('BB')) {
+      addLineIndicator('BB Upper', '#3b82f6', indicatorsDict['BB_UPPER'], 0);
+      addLineIndicator('BB Middle', '#60a5fa', indicatorsDict['BB_MIDDLE'], 0);
+      addLineIndicator('BB Lower', '#3b82f6', indicatorsDict['BB_LOWER'], 0);
+    }
+    if (activeIndicators.includes('SUPERTREND')) {
+      addLineIndicator('Supertrend', '#10b981', indicatorsDict['SUPERTREND'], 0);
+    }
+    if (activeIndicators.includes('KELTNER')) {
+      addLineIndicator('KC Upper', '#06b6d4', indicatorsDict['KELTNER_UPPER'], 0);
+      addLineIndicator('KC Mid', '#06b6d4', indicatorsDict['KELTNER_MIDDLE'], 0);
+      addLineIndicator('KC Lower', '#06b6d4', indicatorsDict['KELTNER_LOWER'], 0);
+    }
+    if (activeIndicators.includes('DONCHIAN')) {
+      addLineIndicator('DC Upper', '#8b5cf6', indicatorsDict['DONCHIAN_UPPER'], 0);
+      addLineIndicator('DC Mid', '#8b5cf6', indicatorsDict['DONCHIAN_MIDDLE'], 0);
+      addLineIndicator('DC Lower', '#8b5cf6', indicatorsDict['DONCHIAN_LOWER'], 0);
+    }
+    if (activeIndicators.includes('PSAR')) {
+      addLineIndicator('Parabolic SAR', '#ec4899', indicatorsDict['PSAR'], 0);
+    }
+    if (activeIndicators.includes('PIVOT_POINTS')) {
+      addLineIndicator('Pivot P', '#eab308', indicatorsDict['PIVOT_P'], 0);
+      addLineIndicator('Pivot R1', '#ef4444', indicatorsDict['PIVOT_R1'], 0);
+      addLineIndicator('Pivot R2', '#dc2626', indicatorsDict['PIVOT_R2'], 0);
+      addLineIndicator('Pivot S1', '#22c55e', indicatorsDict['PIVOT_S1'], 0);
+      addLineIndicator('Pivot S2', '#16a34a', indicatorsDict['PIVOT_S2'], 0);
+    }
+    if (activeIndicators.includes('ZIGZAG')) {
+      addLineIndicator('ZigZag', '#14b8a6', indicatorsDict['ZIGZAG'], 0);
+    }
+    if (activeIndicators.includes('ICHIMOKU')) {
+      addLineIndicator('Tenkan-sen', '#38bdf8', indicatorsDict['ICHIMOKU_TENKAN'], 0);
+      addLineIndicator('Kijun-sen', '#ef4444', indicatorsDict['ICHIMOKU_KIJUN'], 0);
+      addLineIndicator('Span A', '#22c55e', indicatorsDict['ICHIMOKU_SPAN_A'], 0);
+      addLineIndicator('Span B', '#f97316', indicatorsDict['ICHIMOKU_SPAN_B'], 0);
     }
 
-    // 4. Candlestick Pattern Markers (Filtered by activePatterns)
-    if (activePatterns.length > 0 && data.technicals?.patterns?.length) {
+    // --- Sub-Pane Oscillators & Momentum (Dedicated Multi-Panes: Pane 1, 2, ...) ---
+    let currentSubPaneIndex = 1;
+
+    if (activeIndicators.includes('RSI')) {
+      const rsiPane = currentSubPaneIndex++;
+      const rsiSeries = addLineIndicator('RSI 14', '#c084fc', indicatorsDict['RSI_14'] || indicatorsDict['RSI'], rsiPane, 1, 0.1);
+      if (rsiSeries) {
+        rsiSeries.createPriceLine({ price: 70, color: 'rgba(255, 69, 58, 0.5)', lineWidth: 1, lineStyle: 2, title: 'OB 70' });
+        rsiSeries.createPriceLine({ price: 30, color: 'rgba(50, 215, 75, 0.5)', lineWidth: 1, lineStyle: 2, title: 'OS 30' });
+      }
+    }
+
+    if (activeIndicators.includes('MACD')) {
+      const macdPane = currentSubPaneIndex++;
+      addLineIndicator('MACD', '#0284c7', indicatorsDict['MACD_LINE'], macdPane, 2, 0.01);
+      addLineIndicator('Signal', '#f97316', indicatorsDict['MACD_SIGNAL'], macdPane, 2, 0.01);
+      addHistogramIndicator('Hist', indicatorsDict['MACD_HIST'], macdPane);
+    }
+
+    if (activeIndicators.includes('STOCH_RSI')) {
+      const stochPane = currentSubPaneIndex++;
+      const kSeries = addLineIndicator('Stoch %K', '#f43f5e', indicatorsDict['STOCH_RSI_K'], stochPane, 1, 0.1);
+      if (kSeries) {
+        kSeries.createPriceLine({ price: 80, color: 'rgba(255, 69, 58, 0.5)', lineWidth: 1, lineStyle: 2, title: '80' });
+        kSeries.createPriceLine({ price: 20, color: 'rgba(50, 215, 75, 0.5)', lineWidth: 1, lineStyle: 2, title: '20' });
+      }
+      addLineIndicator('Stoch %D', '#38bdf8', indicatorsDict['STOCH_RSI_D'], stochPane, 1, 0.1);
+    }
+
+    if (activeIndicators.includes('ADX')) {
+      const adxPane = currentSubPaneIndex++;
+      const adxSeries = addLineIndicator('ADX 14', '#d97706', indicatorsDict['ADX_14'] || indicatorsDict['ADX'], adxPane, 1, 0.1);
+      if (adxSeries) {
+        adxSeries.createPriceLine({ price: 25, color: 'rgba(251, 191, 36, 0.5)', lineWidth: 1, lineStyle: 2, title: 'Trend 25' });
+      }
+      addLineIndicator('+DI', '#22c55e', indicatorsDict['PLUS_DI_14'], adxPane, 1, 0.1);
+      addLineIndicator('-DI', '#ef4444', indicatorsDict['MINUS_DI_14'], adxPane, 1, 0.1);
+    }
+
+    if (activeIndicators.includes('ATR')) {
+      const atrPane = currentSubPaneIndex++;
+      addLineIndicator('ATR 14', '#14b8a6', indicatorsDict['ATR_14'] || indicatorsDict['ATR'], atrPane, prec, minPriceMove);
+    }
+
+    if (activeIndicators.includes('OBV')) {
+      const obvPane = currentSubPaneIndex++;
+      addLineIndicator('OBV', '#84cc16', indicatorsDict['OBV'], obvPane, 0, 1);
+    }
+
+    // 4. Candle Recognition Markers (Filtered by activeCandles, supporting Bullish, Bearish, and Neutral)
+    const patternsList = data.technicals?.candles || data.technicals?.patterns || [];
+    if (activeCandles.length > 0 && patternsList.length) {
       const markers = [];
-      data.technicals.patterns.forEach((p) => {
-        // Filter by pattern selection
-        if (!activePatterns.includes('ALL') && !activePatterns.includes(p.pattern)) {
+      patternsList.forEach((p) => {
+        // Filter by candle selection
+        if (!activeCandles.includes('ALL') && !activeCandles.includes(p.pattern)) {
           return;
         }
 
@@ -726,15 +878,13 @@ export default function MarketViewScreen() {
         const isBullish = sentiment === 'BULLISH';
         const isBearish = sentiment === 'BEARISH';
         
-        if (isBullish || isBearish) {
-          markers.push({
-            time: timeSec,
-            position: isBullish ? 'belowBar' : 'aboveBar',
-            color: isBullish ? '#32D74B' : '#FF453A',
-            shape: isBullish ? 'arrowUp' : 'arrowDown',
-            text: (p.pattern || 'Pattern').replace(/_/g, ' '),
-          });
-        }
+        markers.push({
+          time: timeSec,
+          position: isBullish ? 'belowBar' : (isBearish ? 'aboveBar' : 'aboveBar'),
+          color: isBullish ? '#32D74B' : (isBearish ? '#FF453A' : '#fbbf24'),
+          shape: isBullish ? 'arrowUp' : (isBearish ? 'arrowDown' : 'circle'),
+          text: (p.pattern || 'Candle').replace(/_/g, ' '),
+        });
       });
       // Sort markers chronologically
       markers.sort((a, b) => a.time - b.time);
@@ -1259,49 +1409,43 @@ export default function MarketViewScreen() {
                     sx={{ mr: 0.5 }}
                   />
 
-                  {/* Dedicated Patterns Popover Button */}
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={(e) => setPatternMenuAnchor(e.currentTarget)}
-                    sx={{
-                      borderColor: selectedPatterns.length > 0 ? 'rgba(50, 215, 75, 0.4)' : '#2C2C2E',
-                      color: selectedPatterns.length > 0 ? '#32D74B' : 'text.primary',
-                      bgcolor: selectedPatterns.length > 0 ? 'rgba(50, 215, 75, 0.08)' : 'transparent',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      borderRadius: 1.8,
-                      textTransform: 'none',
-                      px: 1.2,
-                      py: 0.5,
-                      '&:hover': { borderColor: '#32D74B', bgcolor: 'rgba(50, 215, 75, 0.15)' },
-                    }}
-                    startIcon={<Layers size={13} color="#32D74B" />}
-                    endIcon={<ChevronDown size={13} />}
-                  >
-                    Patterns ({selectedPatterns.includes('ALL') ? 'All' : selectedPatterns.length})
-                  </Button>
+                  {/* Dedicated Candles Recognition Filter Icon Button */}
+                  <Tooltip title={`Candles (${selectedCandles.includes('ALL') ? 'All' : selectedCandles.length} active)`} arrow>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => setCandleMenuAnchor(e.currentTarget)}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: selectedCandles.length > 0 ? 'rgba(50, 215, 75, 0.4)' : '#2C2C2E',
+                        color: selectedCandles.length > 0 ? '#32D74B' : 'text.primary',
+                        bgcolor: selectedCandles.length > 0 ? 'rgba(50, 215, 75, 0.08)' : 'transparent',
+                        borderRadius: 1.8,
+                        p: 0.7,
+                        '&:hover': { borderColor: '#32D74B', bgcolor: 'rgba(50, 215, 75, 0.15)' },
+                      }}
+                    >
+                      <CandlestickChart size={16} color={selectedCandles.length > 0 ? '#32D74B' : '#98989D'} />
+                    </IconButton>
+                  </Tooltip>
 
-                  {/* Overlays Popover Button */}
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={(e) => setOverlayMenuAnchor(e.currentTarget)}
-                    sx={{
-                      borderColor: '#2C2C2E',
-                      color: 'text.primary',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      borderRadius: 1.8,
-                      textTransform: 'none',
-                      px: 1.2,
-                      py: 0.5,
-                    }}
-                    startIcon={<Sliders size={13} color="#38bdf8" />}
-                    endIcon={<ChevronDown size={13} />}
-                  >
-                    Overlays ({selectedOverlays.length})
-                  </Button>
+                  {/* Dedicated Indicators Filter Icon Button (Higher-High Higher-Low) */}
+                  <Tooltip title={`Indicators (${selectedIndicators.length} active)`} arrow>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => setIndicatorMenuAnchor(e.currentTarget)}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: selectedIndicators.length > 0 ? 'rgba(56, 189, 248, 0.4)' : '#2C2C2E',
+                        color: selectedIndicators.length > 0 ? '#38bdf8' : 'text.primary',
+                        bgcolor: selectedIndicators.length > 0 ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
+                        borderRadius: 1.8,
+                        p: 0.7,
+                        '&:hover': { borderColor: '#38bdf8', bgcolor: 'rgba(56, 189, 248, 0.15)' },
+                      }}
+                    >
+                      <TrendingUp size={16} color={selectedIndicators.length > 0 ? '#38bdf8' : '#98989D'} />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
               </Box>
 
@@ -1346,11 +1490,11 @@ export default function MarketViewScreen() {
             {renderViewToggles()}
           </Box>
 
-          {/* Patterns Popover Menu */}
+          {/* Candles Recognition Popover Menu */}
           <Menu
-            anchorEl={patternMenuAnchor}
-            open={Boolean(patternMenuAnchor)}
-            onClose={() => setPatternMenuAnchor(null)}
+            anchorEl={candleMenuAnchor}
+            open={Boolean(candleMenuAnchor)}
+            onClose={() => setCandleMenuAnchor(null)}
             slotProps={{
               paper: {
                 sx: {
@@ -1367,14 +1511,14 @@ export default function MarketViewScreen() {
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.2, pb: 0.8, borderBottom: '1px solid #2C2C2E', px: 0.5 }}>
               <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Filter Patterns ({selectedPatterns.length})
+                Filter Candles ({selectedCandles.length})
               </Typography>
-              {selectedPatterns.length > 0 && (
+              {selectedCandles.length > 0 && (
                 <Button
                   size="small"
                   onClick={() => {
-                    setSelectedPatterns([]);
-                    if (marketData) renderLightweightChart(marketData, timings.fetchMs, [], selectedOverlays);
+                    setSelectedCandles([]);
+                    if (marketData) renderLightweightChart(marketData, timings.fetchMs, [], selectedIndicators);
                   }}
                   sx={{
                     fontSize: '0.68rem',
@@ -1395,8 +1539,8 @@ export default function MarketViewScreen() {
               )}
             </Box>
             <FormGroup>
-              {CANDLESTICK_PATTERNS.map((p) => {
-                const isChecked = selectedPatterns.includes(p.id);
+              {CANDLE_PATTERNS.map((p) => {
+                const isChecked = selectedCandles.includes(p.id);
                 return (
                   <FormControlLabel
                     key={p.id}
@@ -1405,41 +1549,44 @@ export default function MarketViewScreen() {
                         size="small"
                         checked={isChecked}
                         onChange={(e) => {
-                          let nextPatterns;
+                          let nextCandles;
                           if (p.id === 'ALL') {
-                            nextPatterns = e.target.checked ? ['ALL'] : [];
+                            nextCandles = e.target.checked ? ['ALL'] : [];
                           } else {
                             if (e.target.checked) {
-                              nextPatterns = [...selectedPatterns.filter((id) => id !== 'ALL'), p.id];
+                              nextCandles = [...selectedCandles.filter((id) => id !== 'ALL'), p.id];
                             } else {
-                              nextPatterns = selectedPatterns.filter((id) => id !== p.id);
+                              nextCandles = selectedCandles.filter((id) => id !== p.id);
                             }
                           }
-                          setSelectedPatterns(nextPatterns);
+                          setSelectedCandles(nextCandles);
                           if (marketData) {
-                            renderLightweightChart(marketData, timings.fetchMs, nextPatterns, selectedOverlays);
+                            renderLightweightChart(marketData, timings.fetchMs, nextCandles, selectedIndicators);
                           }
                         }}
                         sx={{ color: '#32D74B', '&.Mui-checked': { color: '#32D74B' } }}
                       />
                     }
                     label={
-                      <Typography sx={{ fontSize: '0.78rem', color: isChecked ? '#ffffff' : 'text.secondary', fontWeight: isChecked ? 700 : 500 }}>
-                        {p.label}
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1.5, pr: 0.5 }}>
+                        <Typography sx={{ fontSize: '0.78rem', color: isChecked ? '#ffffff' : 'text.secondary', fontWeight: isChecked ? 700 : 500 }}>
+                          {p.label}
+                        </Typography>
+                        <CandleIconSvg id={p.id} size={18} />
+                      </Box>
                     }
-                    sx={{ mx: 0, my: 0.2 }}
+                    sx={{ mx: 0, my: 0.2, width: '100%' }}
                   />
                 );
               })}
             </FormGroup>
           </Menu>
 
-          {/* Overlays Popover Menu */}
+          {/* Indicators Popover Menu */}
           <Menu
-            anchorEl={overlayMenuAnchor}
-            open={Boolean(overlayMenuAnchor)}
-            onClose={() => setOverlayMenuAnchor(null)}
+            anchorEl={indicatorMenuAnchor}
+            open={Boolean(indicatorMenuAnchor)}
+            onClose={() => setIndicatorMenuAnchor(null)}
             slotProps={{
               paper: {
                 sx: {
@@ -1447,22 +1594,24 @@ export default function MarketViewScreen() {
                   border: '1px solid #2C2C2E',
                   borderRadius: 2,
                   p: 1.5,
-                  minWidth: 260,
+                  minWidth: 290,
+                  maxHeight: 420,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
                 },
               },
             }}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.2, pb: 0.8, borderBottom: '1px solid #2C2C2E', px: 0.5 }}>
               <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Technical Overlays ({selectedOverlays.length})
+                Technical Indicators ({selectedIndicators.length})
               </Typography>
-              {selectedOverlays.length > 0 && (
+              {selectedIndicators.length > 0 && (
                 <Button
                   size="small"
                   onClick={() => {
-                    setSelectedOverlays([]);
+                    setSelectedIndicators([]);
                     if (marketData) {
-                      renderLightweightChart(marketData, timings.fetchMs, selectedPatterns, []);
+                      renderLightweightChart(marketData, timings.fetchMs, selectedCandles, []);
                     }
                   }}
                   sx={{
@@ -1484,35 +1633,38 @@ export default function MarketViewScreen() {
               )}
             </Box>
             <FormGroup>
-              {OVERLAY_OPTIONS.map((opt) => (
+              {INDICATOR_OPTIONS.map((opt) => (
                 <FormControlLabel
                   key={opt.id}
                   control={
                     <Checkbox
                       size="small"
-                      checked={selectedOverlays.includes(opt.id)}
+                      checked={selectedIndicators.includes(opt.id)}
                       onChange={(e) => {
-                        let nextOverlays;
+                        let nextIndicators;
                         if (e.target.checked) {
-                          nextOverlays = [...selectedOverlays, opt.id];
+                          nextIndicators = [...selectedIndicators, opt.id];
                         } else {
-                          nextOverlays = selectedOverlays.filter((id) => id !== opt.id);
+                          nextIndicators = selectedIndicators.filter((id) => id !== opt.id);
                         }
-                        setSelectedOverlays(nextOverlays);
+                        setSelectedIndicators(nextIndicators);
                         if (marketData) {
-                          renderLightweightChart(marketData, timings.fetchMs, selectedPatterns, nextOverlays);
+                          renderLightweightChart(marketData, timings.fetchMs, selectedCandles, nextIndicators);
                         }
                       }}
                       sx={{ color: opt.color, '&.Mui-checked': { color: opt.color } }}
                     />
                   }
                   label={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: opt.color }} />
-                      <Typography sx={{ fontSize: '0.8rem', color: 'text.primary', fontWeight: 600 }}>{opt.label}</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1.5, pr: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: opt.color }} />
+                        <Typography sx={{ fontSize: '0.78rem', color: 'text.primary', fontWeight: 600 }}>{opt.label}</Typography>
+                      </Box>
+                      <IndicatorIconSvg id={opt.id} color={opt.color} size={22} />
                     </Box>
                   }
-                  sx={{ mx: 0, my: 0.3 }}
+                  sx={{ mx: 0, my: 0.3, width: '100%' }}
                 />
               ))}
             </FormGroup>

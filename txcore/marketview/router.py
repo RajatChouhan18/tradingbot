@@ -40,7 +40,10 @@ async def get_market_data(
     startDate: Optional[datetime] = Query(None, description="Start datetime for HISTORICAL mode"),
     endDate: Optional[datetime] = Query(None, description="End datetime for HISTORICAL mode"),
     lookback: int = Query(180, ge=1, le=2000, description="Bars count for LIVE mode"),
-    overlays: Optional[str] = Query(None, description="Optional comma-separated overlays list e.g. EMA_9,EMA_21,VWAP,RSI,MACD,BB,PATTERNS"),
+    indicators: Optional[str] = Query(None, description="Optional comma-separated indicators list e.g. EMA_9,EMA_21,VWAP,RSI,MACD,BB,CANDLES"),
+    overlays: Optional[str] = Query(None, description="Optional comma-separated overlays list (alias for indicators)"),
+    candles: Optional[str] = Query(None, description="Optional comma-separated candles recognition list"),
+    patterns: Optional[str] = Query(None, description="Optional comma-separated patterns recognition list (alias for candles)"),
     current_user: User = Depends(require_permission("MARKETVIEW", "view")),
 ):
     """
@@ -60,7 +63,7 @@ async def get_market_data(
         resolved_market = catalog_item.market
         resolved_exchange = catalog_item.exchange
 
-    candles: List[CandleData] = []
+    candle_records: List[CandleData] = []
     used_provider = "DATABASE"
 
     # 2. Mode Retrieval
@@ -85,7 +88,7 @@ async def get_market_data(
         )
 
         for b in db_bars:
-            candles.append(
+            candle_records.append(
                 CandleData(
                     timestamp=b.timestamp,
                     open=b.open,
@@ -97,8 +100,8 @@ async def get_market_data(
             )
 
         # If DB is empty, fetch from provider and return
-        if not candles:
-            candles = await provider_registry.fetch_candles_with_fallback(
+        if not candle_records:
+            candle_records = await provider_registry.fetch_candles_with_fallback(
                 symbol=clean_symbol,
                 market=resolved_market,
                 timeframe=clean_tf,
@@ -111,7 +114,7 @@ async def get_market_data(
 
     else:
         # LIVE Mode: Fetch cached/live bars from provider registry
-        candles = await provider_registry.fetch_candles_with_fallback(
+        candle_records = await provider_registry.fetch_candles_with_fallback(
             symbol=clean_symbol,
             market=resolved_market,
             timeframe=clean_tf,
@@ -128,8 +131,8 @@ async def get_market_data(
     )
 
     # 3b. Synthesize/update active forming candle with live quote in LIVE mode
-    if live_quote and candles and mode.upper() == "LIVE":
-        last_candle = candles[-1]
+    if live_quote and candle_records and mode.upper() == "LIVE":
+        last_candle = candle_records[-1]
         last_candle.close = live_quote.lastPrice
         if live_quote.lastPrice > last_candle.high:
             last_candle.high = live_quote.lastPrice
@@ -137,8 +140,8 @@ async def get_market_data(
             last_candle.low = live_quote.lastPrice
 
     # 4. Determine Market Session Status & Banner
-    last_price = live_quote.lastPrice if live_quote else (candles[-1].close if candles else None)
-    last_time = live_quote.timestamp if live_quote else (candles[-1].timestamp if candles else None)
+    last_price = live_quote.lastPrice if live_quote else (candle_records[-1].close if candle_records else None)
+    last_time = live_quote.timestamp if live_quote else (candle_records[-1].timestamp if candle_records else None)
 
     status_info = session_manager.get_market_status(
         market=resolved_market,
@@ -147,15 +150,13 @@ async def get_market_data(
         exchange=resolved_exchange,
     )
 
-    # 5. Compute Overlays & Technicals if requested
+    # 5. Compute Indicators/Overlays & Candles/Technicals
     technicals_payload = None
-    if overlays:
-        req_list = [o.strip() for o in overlays.split(",") if o.strip()]
+    if candle_records:
         technicals_payload = compute_market_technicals(
-            candles=candles,
+            candles=candle_records,
             symbol=clean_symbol,
             timeframe=clean_tf,
-            requested_overlays=req_list,
         )
 
     elapsed_ms = round((time.perf_counter() - start_bench) * 1000.0, 2)
@@ -164,7 +165,7 @@ async def get_market_data(
         symbol=clean_symbol,
         market=resolved_market,
         timeframe=clean_tf,
-        candles=candles,
+        candles=candle_records,
         liveQuote=live_quote,
         status=status_info,
         technicals=technicals_payload,

@@ -53,11 +53,17 @@ class PatternMarker(BaseModel):
     description: str
 
 
+# Candlestick Marker Alias for Candle Recognition
+CandleMarker = PatternMarker
+
+
 class ProviderTechnicals(BaseModel):
     symbol: str
     timeframe: str
     timestamp: datetime
+    indicators: Dict[str, List[Optional[float]]] = Field(default_factory=dict)
     overlays: Dict[str, List[Optional[float]]] = Field(default_factory=dict)
+    candles: List[PatternMarker] = Field(default_factory=list)
     patterns: List[PatternMarker] = Field(default_factory=list)
     vixRegime: Optional[str] = None
 

@@ -42,7 +42,9 @@ class UpdateTerminalConfigRequest(BaseModel):
     default_market: Optional[str] = Field(default="INDIAN_EQUITY")
     default_symbol: Optional[str] = Field(default="RELIANCE")
     default_timeframe: Optional[str] = Field(default="5m")
+    default_indicators: Optional[str] = Field(default=None)
     default_overlays: Optional[str] = Field(default="EMA_9,EMA_21,VWAP")
+    default_candles: Optional[str] = Field(default=None)
     default_patterns: Optional[str] = Field(default="ALL")
 
 
@@ -292,7 +294,9 @@ async def get_my_terminal_config(current_user: User = Depends(get_current_user))
             "default_market": "INDIAN_EQUITY",
             "default_symbol": "RELIANCE",
             "default_timeframe": "5m",
+            "default_indicators": "EMA_9,EMA_21,VWAP",
             "default_overlays": "EMA_9,EMA_21,VWAP",
+            "default_candles": "ALL",
             "default_patterns": "ALL",
             "is_customized": False,
         }
@@ -302,7 +306,9 @@ async def get_my_terminal_config(current_user: User = Depends(get_current_user))
         "default_market": config.defaultMarket,
         "default_symbol": config.defaultSymbol,
         "default_timeframe": config.defaultTimeframe,
+        "default_indicators": config.defaultOverlays,
         "default_overlays": config.defaultOverlays,
+        "default_candles": config.defaultPatterns,
         "default_patterns": config.defaultPatterns,
         "is_customized": True,
         "updated_at": config.updatedAt.isoformat(),
@@ -320,8 +326,8 @@ async def update_my_terminal_config(
     clean_market = (req.default_market or "INDIAN_EQUITY").strip().upper()
     clean_symbol = (req.default_symbol or "RELIANCE").strip().upper()
     clean_tf = (req.default_timeframe or "5m").strip().lower()
-    clean_overlays = (req.default_overlays or "EMA_9,EMA_21,VWAP").strip()
-    clean_patterns = (req.default_patterns or "ALL").strip()
+    clean_overlays = (req.default_indicators or req.default_overlays or "EMA_9,EMA_21,VWAP").strip()
+    clean_patterns = (req.default_candles or req.default_patterns or "ALL").strip()
 
     config = await db.userterminalconfig.upsert(
         where={"userId": current_user.id},
@@ -353,7 +359,9 @@ async def update_my_terminal_config(
         "default_market": config.defaultMarket,
         "default_symbol": config.defaultSymbol,
         "default_timeframe": config.defaultTimeframe,
+        "default_indicators": config.defaultOverlays,
         "default_overlays": config.defaultOverlays,
+        "default_candles": config.defaultPatterns,
         "default_patterns": config.defaultPatterns,
         "updated_at": config.updatedAt.isoformat(),
         "message": "Terminal preferences saved successfully.",

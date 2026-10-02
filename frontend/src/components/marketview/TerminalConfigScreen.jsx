@@ -1,0 +1,487 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Card,
+  Typography,
+  Grid,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  FormControlLabel,
+  FormGroup,
+  CircularProgress,
+  Alert,
+  Chip,
+  Divider,
+} from '@mui/material';
+import {
+  Sliders,
+  CheckCircle2,
+  Save,
+  RotateCcw,
+  Layers,
+  Activity,
+  Compass,
+} from 'lucide-react';
+import { api } from '../../api';
+
+const MARKETS = [
+  { id: 'INDIAN_EQUITY', label: 'NSE (India)', defaultSymbol: 'RELIANCE', exchange: 'NSE' },
+  { id: 'US_EQUITY', label: 'US Equities', defaultSymbol: 'AAPL', exchange: 'NASDAQ' },
+  { id: 'CRYPTO', label: 'Crypto (Binance)', defaultSymbol: 'BTCUSDT', exchange: 'BINANCE' },
+  { id: 'FOREX', label: 'Forex (Global)', defaultSymbol: 'EURUSD', exchange: 'FX' },
+  { id: 'MCX', label: 'MCX Commodities', defaultSymbol: 'CRUDEOIL', exchange: 'MCX' },
+];
+
+const DEFAULT_SYMBOLS_BY_MARKET = {
+  INDIAN_EQUITY: [
+    { symbol: 'RELIANCE', shortName: 'Reliance Industries Ltd', exchange: 'NSE' },
+    { symbol: 'TCS', shortName: 'Tata Consultancy Services', exchange: 'NSE' },
+    { symbol: 'INFY', shortName: 'Infosys Ltd', exchange: 'NSE' },
+    { symbol: 'HDFCBANK', shortName: 'HDFC Bank Ltd', exchange: 'NSE' },
+    { symbol: 'ICICIBANK', shortName: 'ICICI Bank Ltd', exchange: 'NSE' },
+    { symbol: 'SBIN', shortName: 'State Bank of India', exchange: 'NSE' },
+    { symbol: 'BHARTIARTL', shortName: 'Bharti Airtel Ltd', exchange: 'NSE' },
+    { symbol: 'ITC', shortName: 'ITC Ltd', exchange: 'NSE' },
+    { symbol: 'NIFTY', shortName: 'NIFTY 50 Benchmark Index', exchange: 'NSE' },
+    { symbol: 'BANKNIFTY', shortName: 'NIFTY Bank Index', exchange: 'NSE' },
+  ],
+  US_EQUITY: [
+    { symbol: 'AAPL', shortName: 'Apple Inc', exchange: 'NASDAQ' },
+    { symbol: 'MSFT', shortName: 'Microsoft Corporation', exchange: 'NASDAQ' },
+    { symbol: 'GOOGL', shortName: 'Alphabet Inc', exchange: 'NASDAQ' },
+    { symbol: 'AMZN', shortName: 'Amazon.com Inc', exchange: 'NASDAQ' },
+    { symbol: 'TSLA', shortName: 'Tesla Inc', exchange: 'NASDAQ' },
+    { symbol: 'SPY', shortName: 'SPDR S&P 500 ETF Trust', exchange: 'NYSE' },
+    { symbol: 'QQQ', shortName: 'Invesco QQQ Trust', exchange: 'NASDAQ' },
+  ],
+  CRYPTO: [
+    { symbol: 'BTCUSDT', shortName: 'Bitcoin / USDT Spot', exchange: 'BINANCE' },
+    { symbol: 'ETHUSDT', shortName: 'Ethereum / USDT Spot', exchange: 'BINANCE' },
+    { symbol: 'SOLUSDT', shortName: 'Solana / USDT Spot', exchange: 'BINANCE' },
+    { symbol: 'BNBUSDT', shortName: 'BNB / USDT Spot', exchange: 'BINANCE' },
+    { symbol: 'XRPUSDT', shortName: 'Ripple / USDT Spot', exchange: 'BINANCE' },
+  ],
+  FOREX: [
+    { symbol: 'EURUSD', shortName: 'Euro / US Dollar Spot', exchange: 'FX' },
+    { symbol: 'GBPUSD', shortName: 'British Pound / US Dollar', exchange: 'FX' },
+    { symbol: 'USDJPY', shortName: 'US Dollar / Japanese Yen', exchange: 'FX' },
+    { symbol: 'USDINR', shortName: 'US Dollar / Indian Rupee', exchange: 'FX' },
+  ],
+  MCX: [
+    { symbol: 'CRUDEOIL', shortName: 'Crude Oil Futures', exchange: 'MCX' },
+    { symbol: 'GOLD', shortName: 'Gold 1KG Futures', exchange: 'MCX' },
+    { symbol: 'SILVER', shortName: 'Silver 30KG Futures', exchange: 'MCX' },
+    { symbol: 'NATURALGAS', shortName: 'Natural Gas Futures', exchange: 'MCX' },
+    { symbol: 'COPPER', shortName: 'Copper Futures', exchange: 'MCX' },
+  ],
+};
+
+const TIMEFRAMES = [
+  { value: '1m', label: '1m (1 Min Intraday)' },
+  { value: '3m', label: '3m (3 Min Intraday)' },
+  { value: '5m', label: '5m (5 Min Intraday)' },
+  { value: '15m', label: '15m (15 Min Intraday)' },
+  { value: '30m', label: '30m (30 Min Intraday)' },
+  { value: '1h', label: '1h (1 Hour Hourly)' },
+  { value: '2h', label: '2h (2 Hours Hourly)' },
+  { value: '4h', label: '4h (4 Hours Hourly)' },
+  { value: '1d', label: '1d (1 Day Daily)' },
+  { value: '1w', label: '1w (1 Week Weekly)' },
+  { value: '1M', label: '1M (1 Month Monthly)' },
+];
+
+const OVERLAY_OPTIONS = [
+  { id: 'EMA_9', label: 'EMA 9 (Fast Trend)', color: '#38bdf8' },
+  { id: 'EMA_21', label: 'EMA 21 (Short Trend)', color: '#a855f7' },
+  { id: 'EMA_50', label: 'EMA 50 (Medium Trend)', color: '#f59e0b' },
+  { id: 'EMA_200', label: 'EMA 200 (Macro Trend)', color: '#f43f5e' },
+  { id: 'SMA_20', label: 'SMA 20 (Mean Baseline)', color: '#60a5fa' },
+  { id: 'VWAP', label: 'VWAP (Volume Weighted Avg Price)', color: '#fbbf24' },
+  { id: 'BB', label: 'Bollinger Bands (20, 2)', color: '#3b82f6' },
+];
+
+const PATTERN_OPTIONS = [
+  { id: 'ALL', label: 'All Detected Patterns' },
+  { id: 'ENGULFING_BULLISH', label: 'Bullish Engulfing' },
+  { id: 'ENGULFING_BEARISH', label: 'Bearish Engulfing' },
+  { id: 'HAMMER', label: 'Hammer' },
+  { id: 'INVERTED_HAMMER', label: 'Inverted Hammer' },
+  { id: 'SHOOTING_STAR', label: 'Shooting Star' },
+  { id: 'HANGING_MAN', label: 'Hanging Man' },
+  { id: 'DOJI', label: 'Doji' },
+  { id: 'DRAGONFLY_DOJI', label: 'Dragonfly Doji' },
+  { id: 'GRAVESTONE_DOJI', label: 'Gravestone Doji' },
+  { id: 'MORNING_STAR', label: 'Morning Star' },
+  { id: 'EVENING_STAR', label: 'Evening Star' },
+  { id: 'MARUBOZU_BULLISH', label: 'Bullish Marubozu' },
+  { id: 'MARUBOZU_BEARISH', label: 'Bearish Marubozu' },
+  { id: 'HARAMI_BULLISH', label: 'Bullish Harami' },
+  { id: 'HARAMI_BEARISH', label: 'Bearish Harami' },
+  { id: 'PIERCING_LINE', label: 'Piercing Line' },
+  { id: 'DARK_CLOUD_COVER', label: 'Dark Cloud Cover' },
+];
+
+export default function TerminalConfigScreen() {
+  const [defaultMarket, setDefaultMarket] = useState('INDIAN_EQUITY');
+  const [defaultSymbol, setDefaultSymbol] = useState('RELIANCE');
+  const [defaultTimeframe, setDefaultTimeframe] = useState('5m');
+  const [selectedOverlays, setSelectedOverlays] = useState(['EMA_9', 'EMA_21', 'VWAP']);
+  const [selectedPatterns, setSelectedPatterns] = useState(['ALL']);
+
+  const [catalogSymbols, setCatalogSymbols] = useState(DEFAULT_SYMBOLS_BY_MARKET['INDIAN_EQUITY']);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+
+  // Load User Configuration on Mount
+  useEffect(() => {
+    setLoading(true);
+    api.getUserTerminalConfig()
+      .then((cfg) => {
+        if (cfg) {
+          const mkt = cfg.default_market || 'INDIAN_EQUITY';
+          setDefaultMarket(mkt);
+          setDefaultSymbol(cfg.default_symbol || 'RELIANCE');
+          setDefaultTimeframe(cfg.default_timeframe || '5m');
+          if (cfg.default_overlays) {
+            setSelectedOverlays(cfg.default_overlays.split(',').map((s) => s.trim()));
+          }
+          if (cfg.default_patterns) {
+            setSelectedPatterns(cfg.default_patterns.split(',').map((s) => s.trim()));
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load user terminal config:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  // Sync catalog symbols when market changes
+  useEffect(() => {
+    const fallbackList = DEFAULT_SYMBOLS_BY_MARKET[defaultMarket] || [];
+    setCatalogSymbols(fallbackList);
+    api.getCatalogSymbols({ market: defaultMarket, activeOnly: true, limit: 100 })
+      .then((res) => {
+        if (Array.isArray(res) && res.length > 0) {
+          setCatalogSymbols(res);
+        }
+      })
+      .catch(() => {});
+  }, [defaultMarket]);
+
+  const handleMarketChange = (newMarket) => {
+    setDefaultMarket(newMarket);
+    const fallbackList = DEFAULT_SYMBOLS_BY_MARKET[newMarket] || [];
+    const def = MARKETS.find((m) => m.id === newMarket)?.defaultSymbol || fallbackList[0]?.symbol || 'RELIANCE';
+    setDefaultSymbol(def);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setFeedback(null);
+    try {
+      await api.updateUserTerminalConfig({
+        default_market: defaultMarket,
+        default_symbol: defaultSymbol,
+        default_timeframe: defaultTimeframe,
+        default_overlays: selectedOverlays.join(','),
+        default_patterns: selectedPatterns.join(','),
+      });
+      setFeedback({ type: 'success', message: 'Terminal preferences saved successfully. MarketView will automatically open with these settings.' });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message || 'Failed to save terminal preferences.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetDefaults = () => {
+    setDefaultMarket('INDIAN_EQUITY');
+    setDefaultSymbol('RELIANCE');
+    setDefaultTimeframe('5m');
+    setSelectedOverlays(['EMA_9', 'EMA_21', 'VWAP']);
+    setSelectedPatterns(['ALL']);
+    setFeedback({ type: 'info', message: 'Preferences reset to factory defaults. Click Save to persist.' });
+  };
+
+  return (
+    <Box sx={{ p: 3, maxWidth: 1200, margin: '0 auto', color: 'text.primary' }}>
+      {/* Feedback Banner */}
+      {feedback && (
+        <Alert
+          severity={feedback.type}
+          onClose={() => setFeedback(null)}
+          sx={{
+            mb: 2.5,
+            borderRadius: 2,
+            bgcolor: feedback.type === 'success' ? '#1C3A24' : feedback.type === 'error' ? '#3A1C1C' : '#1E293B',
+            color: feedback.type === 'success' ? '#32D74B' : feedback.type === 'error' ? '#FF453A' : '#38bdf8',
+            border: `1px solid ${feedback.type === 'success' ? '#32D74B' : feedback.type === 'error' ? '#FF453A' : '#38bdf8'}`,
+          }}
+        >
+          {feedback.message}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
+          <CircularProgress color="primary" />
+        </Box>
+      ) : (
+        <Grid container spacing={2.5}>
+          {/* 1. Primary Terminal Defaults Card */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ p: 2.5, bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', borderRadius: 2.5, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
+                <Compass size={18} color="#2563EB" />
+                <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800 }}>
+                  Primary Market &amp; Instrument Defaults
+                </Typography>
+              </Box>
+
+              <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 2.5 }}>
+                Configure the baseline market exchange, instrument ticker, and chart timeframe loaded automatically whenever you access the MarketView terminal.
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Default Market Exchange */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="config-market-label" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                    Default Market Exchange
+                  </InputLabel>
+                  <Select
+                    labelId="config-market-label"
+                    value={defaultMarket}
+                    label="Default Market Exchange"
+                    onChange={(e) => handleMarketChange(e.target.value)}
+                    sx={{ fontSize: '0.82rem', fontWeight: 700, borderRadius: 2 }}
+                  >
+                    {MARKETS.map((m) => (
+                      <MenuItem key={m.id} value={m.id} sx={{ fontSize: '0.82rem', py: 0.8 }}>
+                        {m.label} ({m.exchange})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Default Asset Symbol */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="config-symbol-label" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                    Default Asset Symbol ({catalogSymbols.length})
+                  </InputLabel>
+                  <Select
+                    labelId="config-symbol-label"
+                    value={defaultSymbol}
+                    label={`Default Asset Symbol (${catalogSymbols.length})`}
+                    onChange={(e) => setDefaultSymbol(e.target.value)}
+                    sx={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: 'monospace', borderRadius: 2 }}
+                    MenuProps={{ PaperProps: { sx: { bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', maxHeight: 320 } } }}
+                  >
+                    {catalogSymbols.map((item) => (
+                      <MenuItem key={item.symbol} value={item.symbol} sx={{ fontSize: '0.82rem', display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                          <Typography sx={{ fontFamily: 'monospace', fontWeight: 800, color: '#60a5fa' }}>{item.symbol}</Typography>
+                          <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary' }}>• {item.shortName || item.fullName}</Typography>
+                        </Box>
+                        <Chip label={item.exchange || item.market} size="small" sx={{ height: 18, fontSize: '0.65rem' }} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Default Timeframe */}
+                <FormControl fullWidth size="small">
+                  <InputLabel id="config-timeframe-label" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                    Default Candle Timeframe
+                  </InputLabel>
+                  <Select
+                    labelId="config-timeframe-label"
+                    value={defaultTimeframe}
+                    label="Default Candle Timeframe"
+                    onChange={(e) => setDefaultTimeframe(e.target.value)}
+                    sx={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: 'monospace', borderRadius: 2 }}
+                  >
+                    {TIMEFRAMES.map((tf) => (
+                      <MenuItem key={tf.value} value={tf.value} sx={{ fontSize: '0.82rem', py: 0.8, fontFamily: 'monospace' }}>
+                        {tf.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Card>
+          </Grid>
+
+          {/* 2. Technical Overlays Defaults Card */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card sx={{ p: 2.5, bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', borderRadius: 2.5, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
+                <Sliders size={18} color="#38bdf8" />
+                <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800 }}>
+                  Active Technical Overlays ({selectedOverlays.length})
+                </Typography>
+              </Box>
+
+              <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 2 }}>
+                Select mathematical overlays and trend indicators to synthesize immediately onto the chart canvas.
+              </Typography>
+
+              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1 }}>
+                {OVERLAY_OPTIONS.map((opt) => {
+                  const isChecked = selectedOverlays.includes(opt.id);
+                  return (
+                    <FormControlLabel
+                      key={opt.id}
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedOverlays((prev) => [...prev, opt.id]);
+                            } else {
+                              setSelectedOverlays((prev) => prev.filter((id) => id !== opt.id));
+                            }
+                          }}
+                          sx={{ color: opt.color, '&.Mui-checked': { color: opt.color } }}
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: opt.color }} />
+                          <Typography sx={{ fontSize: '0.78rem', fontWeight: isChecked ? 700 : 500 }}>{opt.label}</Typography>
+                        </Box>
+                      }
+                      sx={{ mx: 0 }}
+                    />
+                  );
+                })}
+              </FormGroup>
+            </Card>
+          </Grid>
+
+          {/* 3. Candlestick Patterns Defaults Card */}
+          <Grid size={{ xs: 12 }}>
+            <Card sx={{ p: 2.5, bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', borderRadius: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                  <Layers size={18} color="#32D74B" />
+                  <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800 }}>
+                    Default Candlestick Pattern Filters ({selectedPatterns.includes('ALL') ? 'All' : selectedPatterns.length})
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    onClick={() => setSelectedPatterns(['ALL'])}
+                    sx={{ fontSize: '0.72rem', textTransform: 'none', color: '#32D74B' }}
+                  >
+                    Select All
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() => setSelectedPatterns([])}
+                    sx={{ fontSize: '0.72rem', textTransform: 'none', color: '#f43f5e' }}
+                  >
+                    Clear All
+                  </Button>
+                </Box>
+              </Box>
+
+              <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 2 }}>
+                Choose which algorithmic candlestick patterns should automatically trigger chart markers and telemetry badges upon load.
+              </Typography>
+
+              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 1 }}>
+                {PATTERN_OPTIONS.map((p) => {
+                  const isChecked = selectedPatterns.includes(p.id);
+                  return (
+                    <FormControlLabel
+                      key={p.id}
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (p.id === 'ALL') {
+                              setSelectedPatterns(e.target.checked ? ['ALL'] : []);
+                            } else {
+                              if (e.target.checked) {
+                                setSelectedPatterns((prev) => [...prev.filter((id) => id !== 'ALL'), p.id]);
+                              } else {
+                                setSelectedPatterns((prev) => prev.filter((id) => id !== p.id));
+                              }
+                            }
+                          }}
+                          sx={{ color: '#32D74B', '&.Mui-checked': { color: '#32D74B' } }}
+                        />
+                      }
+                      label={
+                        <Typography sx={{ fontSize: '0.76rem', color: isChecked ? 'text.primary' : 'text.secondary', fontWeight: isChecked ? 700 : 500 }}>
+                          {p.label}
+                        </Typography>
+                      }
+                      sx={{ mx: 0 }}
+                    />
+                  );
+                })}
+              </FormGroup>
+            </Card>
+          </Grid>
+
+          {/* 4. Action Buttons Bar */}
+          <Grid size={{ xs: 12 }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', alignItems: 'center', pt: 1 }}>
+              <Button
+                variant="outlined"
+                onClick={handleResetDefaults}
+                disabled={saving}
+                sx={{
+                  borderColor: '#2C2C2E',
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  px: 2.5,
+                  py: 1,
+                  '&:hover': { borderColor: '#475569', color: 'text.primary' },
+                }}
+                startIcon={<RotateCcw size={15} />}
+              >
+                Reset to Defaults
+              </Button>
+
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                disabled={saving}
+                sx={{
+                  bgcolor: '#2563EB',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  px: 3.5,
+                  py: 1,
+                  '&:hover': { bgcolor: '#1d4ed8' },
+                }}
+                startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save size={16} />}
+              >
+                {saving ? 'Saving...' : 'Save Preferences'}
+              </Button>
+            </Box>
+          </Grid>
+        </Grid>
+      )}
+    </Box>
+  );
+}

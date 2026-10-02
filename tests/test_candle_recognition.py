@@ -13,8 +13,12 @@ from txcore.models.types import Candle, CandleType
 from txcore.analysis.candle import (
     candle_parts,
     is_doji,
+    is_bullish_doji,
+    is_bearish_doji,
+    is_neutral_doji,
     is_dragonfly_doji,
     is_gravestone_doji,
+    is_long_legged_doji,
     is_hammer,
     is_inverted_hammer,
     is_shooting_star,
@@ -85,6 +89,75 @@ class TestDojiRecognition:
         c = Candle(time=t0, open=1.1002, high=1.1100, low=1.1000, close=1.1000)
         assert is_gravestone_doji(c) is True
         assert is_dragonfly_doji(c) is False
+
+    def test_directional_doji_classification(self):
+        # Bullish Doji: small body, close > open
+        c_bull = Candle(time=t0, open=1.1000, high=1.1050, low=1.0950, close=1.1008)
+        assert is_doji(c_bull) is True
+        assert c_bull.is_bullish is True
+        assert c_bull.color_hex == "#10b981"
+        assert classify_candle(c_bull) == CandleType.BULLISH_DOJI
+
+        # Bearish Doji: small body, close < open
+        c_bear = Candle(time=t0, open=1.1008, high=1.1050, low=1.0950, close=1.1000)
+        assert is_doji(c_bear) is True
+        assert c_bear.is_bearish is True
+        assert c_bear.color_hex == "#ef4444"
+        assert classify_candle(c_bear) == CandleType.BEARISH_DOJI
+
+        # Neutral Doji: open == close
+        c_flat = Candle(time=t0, open=1.1000, high=1.1050, low=1.0950, close=1.1000)
+        assert is_doji(c_flat) is True
+        assert c_flat.is_flat is True
+        assert c_flat.color_hex == "#10b981"
+        assert classify_candle(c_flat) == CandleType.NEUTRAL_DOJI
+
+    def test_doji_inversion_protection_lower_wick_dominance(self):
+        """
+        Massive buyer defense at lows: 80% lower wick rejection, 2% body, 18% upper wick.
+        Even if close is 0.0001 lower than open (micro-tick red), it represents buying support
+        and must NEVER be classified as BEARISH_DOJI!
+        """
+        c = Candle(time=t0, open=1.1002, high=1.1020, low=1.0920, close=1.1000)
+        assert is_doji(c) is True
+        assert is_bullish_doji(c) is True
+        assert is_bearish_doji(c) is False
+        assert classify_candle(c) in (CandleType.BULLISH_DOJI, CandleType.DRAGONFLY_DOJI)
+
+    def test_doji_inversion_protection_upper_wick_dominance(self):
+        """
+        Massive seller defense at highs: 80% upper wick rejection, 2% body, 18% lower wick.
+        Even if close is 0.0001 higher than open (micro-tick green), it represents selling resistance
+        and must NEVER be classified as BULLISH_DOJI!
+        """
+        c = Candle(time=t0, open=1.1000, high=1.1100, low=1.0980, close=1.1002)
+        assert is_doji(c) is True
+        assert is_bearish_doji(c) is True
+        assert is_bullish_doji(c) is False
+        assert classify_candle(c) in (CandleType.BEARISH_DOJI, CandleType.GRAVESTONE_DOJI)
+
+    def test_dragonfly_doji_bullish_with_red_micro_tick(self):
+        """Dragonfly doji with close 0.0001 below open is still classified as DRAGONFLY_DOJI."""
+        c = Candle(time=t0, open=1.1099, high=1.1100, low=1.1000, close=1.1098)
+        assert is_dragonfly_doji(c) is True
+        assert is_bullish_doji(c) is True
+        assert is_bearish_doji(c) is False
+        assert classify_candle(c) == CandleType.DRAGONFLY_DOJI
+
+    def test_gravestone_doji_bearish_with_green_micro_tick(self):
+        """Gravestone doji with close 0.0001 above open is still classified as GRAVESTONE_DOJI."""
+        c = Candle(time=t0, open=1.1001, high=1.1100, low=1.1000, close=1.1002)
+        assert is_gravestone_doji(c) is True
+        assert is_bearish_doji(c) is True
+        assert is_bullish_doji(c) is False
+        assert classify_candle(c) == CandleType.GRAVESTONE_DOJI
+
+    def test_long_legged_doji(self):
+        """Tiny body (0.0002) centered between long upper and lower wicks (0.0049 each)."""
+        c = Candle(time=t0, open=1.1000, high=1.1050, low=1.0950, close=1.1000)
+        assert is_long_legged_doji(c) is True
+        assert is_neutral_doji(c) is True
+
 
 
 class TestHammerAndStarRecognition:

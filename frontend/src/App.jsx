@@ -3,13 +3,23 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import DashboardView from './components/DashboardView';
 import AlgoTradeView from './components/AlgoTradeView';
+import PaperTradingView from './components/PaperTradingView';
 import MarketDataView from './components/MarketDataView';
+import MarketViewScreen from './components/marketview/MarketViewScreen';
+import TerminalConfigScreen from './components/marketview/TerminalConfigScreen';
 import AuditingView from './components/AuditingView';
 import LoggingView from './components/LoggingView';
-import { api } from './api';
+import UserManagementScreen from './components/admin/UserManagementScreen';
+import MarketCatalogScreen from './components/catalog/MarketCatalogScreen';
+import LoginPage from './components/auth/LoginPage';
+import ThemeSettingsModal from './components/ThemeSettingsModal';
+import { api, connectTelemetryStream } from './api';
+import { useAuth } from './context/AuthContext';
 import { CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { Box, CircularProgress } from '@mui/material';
 
 export default function App() {
+  const { isAuthenticated, isLoading } = useAuth();
   const [currentModule, setCurrentModule] = useState('dashboard');
   const [algos, setAlgos] = useState([]);
   const [signals, setSignals] = useState([]);
@@ -17,6 +27,9 @@ export default function App() {
   const [systemStatus, setSystemStatus] = useState(null);
   const [isRunningAll, setIsRunningAll] = useState(false);
   const [toast, setToast] = useState(null);
+  const [streamConnected, setStreamConnected] = useState(false);
+  const [concurrencyStats, setConcurrencyStats] = useState(null);
+  const [openPositionsCount, setOpenPositionsCount] = useState(0);
 
   // Show a notification toast
   const showToast = (message, type = 'success') => {
@@ -29,26 +42,75 @@ export default function App() {
   // Fetch status, algos, and pnl summary
   const loadData = useCallback(async () => {
     try {
-      const [statusRes, algosRes, pnlRes, signalsRes] = await Promise.all([
+      const [statusRes, algosRes, pnlRes, signalsRes, concRes, paperPosRes] = await Promise.all([
         api.getStatus().catch(() => null),
         api.listAlgos({ include_deleted: false }).catch(() => []),
         api.getPnl().catch(() => null),
         api.listSignals().catch(() => []),
+        api.getConcurrency().catch(() => null),
+        api.getPaperPositions().catch(() => []),
       ]);
 
       if (statusRes) setSystemStatus(statusRes);
       if (Array.isArray(algosRes)) setAlgos(algosRes);
       if (pnlRes) setPnlSummary(pnlRes);
       if (Array.isArray(signalsRes)) setSignals(signalsRes);
+      if (concRes) setConcurrencyStats(concRes);
+      if (Array.isArray(paperPosRes)) setOpenPositionsCount(paperPosRes.length);
     } catch (err) {
       console.error('Error refreshing platform data:', err);
     }
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     loadData();
-    const interval = setInterval(loadData, 20000);
-    return () => clearInterval(interval);
+
+    // Connect to real-time Server-Sent Events (SSE) telemetry stream
+    const stream = connectTelemetryStream({
+      onOpen: () => {
+        setStreamConnected(true);
+      },
+      onError: () => {
+        setStreamConnected(false);
+      },
+      onConnected: (data) => {
+        setStreamConnected(true);
+        if (data?.concurrency) setConcurrencyStats(data.concurrency);
+      },
+      onHeartbeat: (data) => {
+        setStreamConnected(true);
+        if (data?.concurrency) setConcurrencyStats(data.concurrency);
+      },
+      onCycleUpdate: (data) => {
+        if (data?.metrics) {
+          setAlgos((prev) =>
+            prev.map((a) => (a.algo_id === data.algo_id ? { ...a, ...data.metrics } : a))
+          );
+        }
+      },
+      onSignalAlert: (data) => {
+        if (data?.signal) {
+          setSignals((prev) => [data.signal, ...prev]);
+          showToast(
+            `⚡ New Signal [${data.signal.symbol}]: ${data.signal.direction} @ ₹${data.signal.price}`,
+            'info'
+          );
+        }
+      },
+      onPaperPositionOpened: () => {
+        setOpenPositionsCount((prev) => prev + 1);
+      },
+      onPaperPositionClosed: () => {
+        setOpenPositionsCount((prev) => Math.max(0, prev - 1));
+      },
+    });
+
+    const interval = setInterval(loadData, 45000);
+    return () => {
+      stream.close();
+      clearInterval(interval);
+    };
   }, [loadData]);
 
   // Strategy Action Handlers
@@ -152,21 +214,41 @@ export default function App() {
   const getModuleTitle = () => {
     switch (currentModule) {
       case 'dashboard':
-        return 'Command Center Dashboard';
-      case 'algotrade':
-        return 'AlgoTrade Strategy Engine';
-      case 'signals':
-        return 'Live Signals & PnL Performance';
+        return 'Dashboard';
       case 'market':
-        return 'Market Data Provider & Chart Comparison';
+        return 'MarketView';
+      case 'terminal_config':
+        return 'Terminal Configuration';
+      case 'events':
+        return 'Event Triggers';
+      case 'algotrade':
+        return 'AlgoTrade';
+      case 'paper':
+        return 'Paper Trading';
+      case 'catalog':
+        return 'Market Catalog';
       case 'auditing':
-        return 'Auditing & Rule Validation Footprint';
+        return 'Auditing';
       case 'logging':
-        return 'Real-Time Telemetry & Log Streams';
+        return 'Logging';
+      case 'users':
+        return 'User & Roles';
       default:
-        return 'AlgoTrade Platform';
+        return 'Dashboard';
     }
   };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)' }}>
@@ -213,6 +295,7 @@ export default function App() {
         systemStatus={systemStatus}
         algosCount={algos.filter(a => !a.is_deleted).length}
         signalsCount={signals.length}
+        openPositionsCount={openPositionsCount}
       />
 
       {/* Main Content Area */}
@@ -222,6 +305,8 @@ export default function App() {
           onRunAllCycles={handleRunAllCycles}
           isRunningAll={isRunningAll}
           activeModuleTitle={getModuleTitle()}
+          streamConnected={streamConnected}
+          concurrencyStats={concurrencyStats}
         />
 
         {/* View Router */}
@@ -229,14 +314,23 @@ export default function App() {
           {currentModule === 'dashboard' && (
             <DashboardView
               algos={algos}
+              signals={signals}
+              systemStatus={systemStatus}
+              pnlSummary={pnlSummary}
+              streamConnected={streamConnected}
+              concurrencyStats={concurrencyStats}
               onStartAlgo={handleStartAlgo}
               onStopAlgo={handleStopAlgo}
               onPauseAlgo={handlePauseAlgo}
               onCopyAlgo={handleCopyAlgo}
               onDeleteAlgo={handleDeleteAlgo}
+              onCreateAlgo={handleCreateAlgo}
               onSelectAlgo={() => setCurrentModule('algotrade')}
               onGoToSignals={() => setCurrentModule('signals')}
-              pnlSummary={pnlSummary}
+              onRunAllCycles={handleRunAllCycles}
+              isRunningAll={isRunningAll}
+              onResendSignal={handleResendSignal}
+              onSelectModule={setCurrentModule}
             />
           )}
 
@@ -255,6 +349,10 @@ export default function App() {
             />
           )}
 
+          {currentModule === 'paper' && (
+            <PaperTradingView showToast={showToast} />
+          )}
+
           {currentModule === 'signals' && (
             <AlgoTradeView
               algos={algos}
@@ -271,7 +369,15 @@ export default function App() {
           )}
 
           {currentModule === 'market' && (
-            <MarketDataView />
+            <MarketViewScreen />
+          )}
+
+          {currentModule === 'terminal_config' && (
+            <TerminalConfigScreen />
+          )}
+
+          {currentModule === 'catalog' && (
+            <MarketCatalogScreen showToast={showToast} />
           )}
 
           {currentModule === 'auditing' && (
@@ -283,8 +389,15 @@ export default function App() {
           {currentModule === 'logging' && (
             <LoggingView />
           )}
+
+          {currentModule === 'users' && (
+            <UserManagementScreen />
+          )}
         </main>
       </div>
+
+      {/* Global Theme Settings Modal */}
+      <ThemeSettingsModal />
     </div>
   );
 }

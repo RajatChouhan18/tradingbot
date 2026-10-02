@@ -488,7 +488,7 @@ python pdf_price_action_bot_v3_tradingview.py --audit EUR/USD
 
 ---
 
-## 11. Universal Market-Agnostic Architecture & TradeAlgo Suite
+## 11. Universal Market-Agnostic Architecture & AlgoTrade Suite
 
 The trading bot uses a **universal, market-agnostic pipeline** where the same modules and data flow work for ALL markets (Forex, Indian Equities, Commodities, Crypto). Market-specific details are injected via configuration and provider adapters.
 

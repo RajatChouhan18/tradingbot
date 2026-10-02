@@ -9,9 +9,9 @@
 
 ## 1. Executive Summary
 
-TxBot is a modular, multi-market trading signal engine that automates the full pipeline from market data ingestion through pattern detection, multi-factor analysis, strategy execution, and signal dispatch. The V2 architecture replaces the current market-specific folder approach with a **universal, market-agnostic pipeline** where all markets (Forex, Indian Equities, Commodities, Crypto) share identical module structure and data flow.
+TxBot is a modular, **multi-market paper trading signal engine** that automates the full pipeline from market data ingestion through pattern detection, multi-factor analysis, strategy execution, and signal dispatch. The V2 architecture replaces the current market-specific folder approach with a **universal, market-agnostic pipeline** where all markets (Forex, Indian Equities, Commodities, Crypto) share identical module structure and data flow.
 
-Each running pipeline instance is a **TradeAlgo** — a named, identifiable, independently monitorable process that encapsulates a complete configuration from market selection through signal delivery.
+Each running pipeline instance is a **AlgoTrade** — a named, identifiable, independently monitorable process that encapsulates a complete configuration from market selection through signal delivery.
 
 ---
 
@@ -48,8 +48,8 @@ flowchart TD
         AU["audit/\nDeduplication\nAuditor, Tracker"]
     end
 
-    subgraph RUNNER["TradeAlgo Runner"]
-        TA["TradeAlgo Instance\n(Named, ID, Config)"]
+    subgraph RUNNER["AlgoTrade Runner"]
+        TA["AlgoTrade Instance\n(Named, ID, Config)"]
     end
 
     S --> TA
@@ -69,9 +69,9 @@ flowchart TD
 |-----------|-------------|
 | **Market-Agnostic** | No market-specific folders. Same pipeline for Forex, Indian, Commodity, Crypto. |
 | **Provider Injection** | Data providers are interchangeable adapters behind `BaseDataProvider`. |
-| **Configuration-Driven** | Market, symbols, timeframe, strategy, indicators — all configurable per TradeAlgo. |
+| **Configuration-Driven** | Market, symbols, timeframe, strategy, indicators — all configurable per AlgoTrade. |
 | **Modular Pipeline** | Each step is a standalone, testable module. Steps can be composed freely. |
-| **Process Model** | Each pipeline run = TradeAlgo instance with unique name & ID. |
+| **Process Model** | Each pipeline run = AlgoTrade instance with unique name & ID. |
 | **Market Nomenclature** | Code uses trading terms (candle, bar, signal, level), not generic CS abstractions. |
 
 ---
@@ -80,7 +80,7 @@ flowchart TD
 
 ### 3.1 Stage 1: SELECT (Configuration)
 
-The user or system defines a **TradeAlgo configuration** specifying:
+The user or system defines a **AlgoTrade configuration** specifying:
 
 | Setting | Type | Example Values | Required |
 |---------|------|---------------|----------|
@@ -96,11 +96,11 @@ The user or system defines a **TradeAlgo configuration** specifying:
 | `chart_enabled` | Bool | `true` / `false` | ❌ |
 | `chart_type` | String | `tradingview`, `plotly`, `lightweight` | ❌ |
 | `signal_endpoints` | List[Dict] | `[{"type": "telegram", "chat_ids": [...]}]` | ✅ |
-| `algo_name` | String | `"TradeAlgo1"`, `"NiftyScalper"` | ✅ |
+| `algo_name` | String | `"AlgoTrade1"`, `"NiftyScalper"` | ✅ |
 | `algo_id` | String (auto) | UUID or `TA-{name}-{timestamp}-{hex}` | Auto |
 
 > [!IMPORTANT]
-> The SELECT stage must support both **CLI arguments** and **programmatic config objects** (Python dict / YAML / JSON) so TradeAlgos can be spun up from the API, CLI, or future React UI.
+> The SELECT stage must support both **CLI arguments** and **programmatic config objects** (Python dict / YAML / JSON) so AlgoTrades can be spun up from the API, CLI, or future React UI.
 
 ### 3.2 Stage 2: FETCH (Data Provider Layer)
 
@@ -129,7 +129,7 @@ class BaseDataProvider(ABC):
 
 **Key requirements**:
 - All providers return the **same DataFrame schema** (`time`, `open`, `high`, `low`, `close`, `volume`).
-- Provider selection is **configuration-driven** — injected at TradeAlgo creation.
+- Provider selection is **configuration-driven** — injected at AlgoTrade creation.
 - Multiple providers can be composed (e.g., TradingView for candles + NSE API for VIX/breadth).
 - Each provider handles its own authentication, session management, and rate limiting internally.
 
@@ -152,7 +152,7 @@ After raw OHLCV data is fetched, the pipeline enriches it with supplementary mar
 | **ADR / Market Breadth** | Advance-Decline Ratio, sentiment | NSE API | Provider |
 
 > [!NOTE]
-> Which data types are computed depends on the TradeAlgo configuration (`indicators` and `extra_data` fields). Only requested data is computed to keep the pipeline efficient.
+> Which data types are computed depends on the AlgoTrade configuration (`indicators` and `extra_data` fields). Only requested data is computed to keep the pipeline efficient.
 
 ### 3.4 Stage 4: DETECT (Pattern & Indicator Recognition)
 
@@ -172,7 +172,7 @@ After raw OHLCV data is fetched, the pipeline enriches it with supplementary mar
 
 **Requirements**:
 - Pattern detection functions are **pure functions** operating on DataFrames (no side effects).
-- Only patterns specified in TradeAlgo config are scanned (configurable, not hardcoded).
+- Only patterns specified in AlgoTrade config are scanned (configurable, not hardcoded).
 - Each detected pattern returns a standardized `PatternResult` with: pattern type, direction, confidence, bar indices, metadata.
 
 ### 3.5 Stage 5: ANALYZE (Multi-Factor Analysis Engine)
@@ -200,7 +200,7 @@ Analysis Output:
 ```
 
 **Requirements**:
-- The analysis is **configurable** — the TradeAlgo config specifies which factors to include.
+- The analysis is **configurable** — the AlgoTrade config specifies which factors to include.
 - Each factor contributes a weighted score; weights are strategy-dependent.
 - Analysis results are structured data (dataclass), not free-text.
 
@@ -256,21 +256,21 @@ class BaseNotifier(ABC):
 | Push Notification | `push.py` | 🔲 Planned |
 
 **Requirements**:
-- Multiple endpoints per TradeAlgo (e.g., Telegram + File + Discord simultaneously).
+- Multiple endpoints per AlgoTrade (e.g., Telegram + File + Discord simultaneously).
 - Each signal includes: text alert, chart attachment (if enabled), metadata.
 - Delivery tracking and retry logic via `audit/delivery_tracker.py`.
 
 ---
 
-## 4. TradeAlgo Process Model
+## 4. AlgoTrade Process Model
 
 ### 4.1 Concept
 
-A **TradeAlgo** is a named, independently running pipeline instance:
+A **AlgoTrade** is a named, independently running pipeline instance:
 
 ```mermaid
 flowchart TD
-    subgraph TA1["TradeAlgo: NiftyScalper (TA-NS-20260927-A3F2)"]
+    subgraph TA1["AlgoTrade: NiftyScalper (TA-NS-20260927-A3F2)"]
         C1["Market: INDIAN_EQUITY"]
         C2["Symbols: NIFTY 50, BANK NIFTY"]
         C3["Timeframe: 5m"]
@@ -279,7 +279,7 @@ flowchart TD
         C6["Endpoints: Telegram"]
     end
 
-    subgraph TA2["TradeAlgo: ForexMajors (TA-FM-20260927-B7D1)"]
+    subgraph TA2["AlgoTrade: ForexMajors (TA-FM-20260927-B7D1)"]
         D1["Market: FOREX"]
         D2["Symbols: EUR/USD, GBP/JPY, USD/JPY"]
         D3["Timeframe: 1m"]
@@ -292,7 +292,7 @@ flowchart TD
     TA2 --> MON
 ```
 
-### 4.2 TradeAlgo Properties
+### 4.2 AlgoTrade Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -307,18 +307,18 @@ flowchart TD
 | `last_scan_at` | datetime | Timestamp of last scan cycle |
 | `error_log` | List | Recent errors (capped) |
 
-### 4.3 Multi-TradeAlgo Requirements
+### 4.3 Multi-AlgoTrade Requirements
 
-- Multiple TradeAlgo instances can run simultaneously.
-- Each TradeAlgo is independently configurable, startable, stoppable, and monitorable.
-- A **TradeAlgo Manager** orchestrates lifecycle (create, start, pause, stop, destroy).
+- Multiple AlgoTrade instances can run simultaneously.
+- Each AlgoTrade is independently configurable, startable, stoppable, and monitorable.
+- A **AlgoTrade Manager** orchestrates lifecycle (create, start, pause, stop, destroy).
 - Status and metrics are queryable programmatically and via CLI.
 
 ---
 
 ## 5. Configuration Schema
 
-### 5.1 TradeAlgo Configuration (YAML example)
+### 5.1 AlgoTrade Configuration (YAML example)
 
 ```yaml
 algo_name: "NiftyScalper"
@@ -375,7 +375,7 @@ schedule:
 Retains environment-based configuration with market-specific watchlists:
 
 ```python
-# Market Watchlists (shared across all TradeAlgos)
+# Market Watchlists (shared across all AlgoTrades)
 FOREX_PAIRS: Dict[str, Dict[str, str]]           # EUR/USD, GBP/JPY, etc.
 INDIAN_INDICES: Dict[str, Dict[str, str]]          # NIFTY, BANKNIFTY, etc.
 INDIAN_STOCKS_WATCHLIST: Dict[str, Dict[str, str]] # RELIANCE, TCS, etc.
@@ -393,9 +393,9 @@ CRYPTO_PAIRS: Dict[str, Dict[str, str]]            # BTC/USD, ETH/USD, etc.
 | **Extensibility** | Adding a new market = adding a provider + config. No structural changes needed. |
 | **Maintainability** | Code uses market nomenclature. Module naming matches trading concepts. |
 | **Performance** | Pipeline should complete one scan cycle across all symbols in < 30s. |
-| **Resilience** | Provider failures must be caught and logged, not crash the TradeAlgo. |
+| **Resilience** | Provider failures must be caught and logged, not crash the AlgoTrade. |
 | **Idempotency** | Signal deduplication prevents redundant alerts within configurable window. |
-| **Observability** | Each TradeAlgo exposes status, cycle count, signal count, error log. |
+| **Observability** | Each AlgoTrade exposes status, cycle count, signal count, error log. |
 
 ---
 
@@ -411,7 +411,7 @@ CRYPTO_PAIRS: Dict[str, Dict[str, str]]            # BTC/USD, ETH/USD, etc.
 
 | Metric | Description |
 |--------|-------------|
-| **P&L Tracking** | Per-TradeAlgo profit/loss over time |
+| **P&L Tracking** | Per-AlgoTrade profit/loss over time |
 | **Accuracy Matrix** | Win rate, risk-reward ratio, per-pattern accuracy |
 | **Score Cards** | Composite performance scores per strategy |
 | **Audit Trail** | Complete signal lifecycle (generated → dispatched → trade result) |
@@ -419,21 +419,21 @@ CRYPTO_PAIRS: Dict[str, Dict[str, str]]            # BTC/USD, ETH/USD, etc.
 ### 7.3 Multi-User & Admin
 
 - Multiple users with role-based access (Admin, Viewer, Operator).
-- Admin can configure, start/stop, and audit any TradeAlgo.
-- Per-user TradeAlgo ownership and visibility controls.
+- Admin can configure, start/stop, and audit any AlgoTrade.
+- Per-user AlgoTrade ownership and visibility controls.
 
 ### 7.4 React UI
 
 - **Sleek, seamless, easy-to-use** dashboard.
-- Real-time TradeAlgo status monitoring.
+- Real-time AlgoTrade status monitoring.
 - Interactive chart viewing (embedded TradingView Lightweight Charts).
-- Configuration management (create/edit/delete TradeAlgo configs).
+- Configuration management (create/edit/delete AlgoTrade configs).
 - Signal history and performance analytics visualization.
 - Code must be **maintainable and in sync** with the Python backend.
 
 ### 7.5 Advanced Features
 
-- **Multi-TradeAlgo Comparison**: Side-by-side performance of different strategies.
+- **Multi-AlgoTrade Comparison**: Side-by-side performance of different strategies.
 - **Backtesting Engine**: Historical data replay through the pipeline.
 - **Alert Escalation**: Progressive notification urgency based on conviction score.
 - **Market Session Awareness**: Auto-pause during market holidays/off-hours per market timezone.
@@ -472,7 +472,7 @@ CRYPTO_PAIRS: Dict[str, Dict[str, str]]            # BTC/USD, ETH/USD, etc.
 | `indian_market/nse_client.py` | `txcore/providers/nse_provider.py` | HTTP client becomes an internal detail of the NSE provider |
 | `indian_market/extractor.py` | Dissolve across pipeline | Extraction logic distributed into providers + analysis + strategies |
 | `indian_market/cli.py` | Unified CLI | Single CLI that works for any market |
-| Hardcoded Forex-only runner | `TradeAlgo` runner | Configurable, market-agnostic runner |
+| Hardcoded Forex-only runner | `AlgoTrade` runner | Configurable, market-agnostic runner |
 
 ---
 
@@ -481,7 +481,7 @@ CRYPTO_PAIRS: Dict[str, Dict[str, str]]            # BTC/USD, ETH/USD, etc.
 ### Phase 1: Architecture Refactor (Foundation)
 - [ ] Create `GEMINI.md` architectural rule ✅
 - [ ] Dissolve `txcore/indian_market/` into market-agnostic modules
-- [ ] Create `TradeAlgo` config dataclass and manager
+- [ ] Create `AlgoTrade` config dataclass and manager
 - [ ] Unify CLI to work with any market
 - [ ] Merge Indian models into `txcore/models/types.py`
 - [ ] Move NSE client into `txcore/providers/nse_provider.py`
@@ -500,17 +500,17 @@ CRYPTO_PAIRS: Dict[str, Dict[str, str]]            # BTC/USD, ETH/USD, etc.
 - [ ] Implement Mean Reversion Strategy
 - [ ] Add Zerodha/Angel One providers
 - [ ] Add Discord/WhatsApp/Email dispatchers
-- [ ] Multi-TradeAlgo concurrent execution
+- [ ] Multi-AlgoTrade concurrent execution
 
 ### Phase 4: Paper Trading & Analytics
 - [ ] Paper trading engine
-- [ ] P&L tracking per TradeAlgo
+- [ ] P&L tracking per AlgoTrade
 - [ ] Accuracy matrix & scorecards
 - [ ] Backtesting engine
 
 ### Phase 5: React UI & Multi-User
 - [ ] React dashboard (real-time monitoring)
-- [ ] TradeAlgo CRUD from UI
+- [ ] AlgoTrade CRUD from UI
 - [ ] User management & RBAC
 - [ ] Interactive chart embedding
 - [ ] Signal history & analytics views
@@ -521,7 +521,7 @@ CRYPTO_PAIRS: Dict[str, Dict[str, str]]            # BTC/USD, ETH/USD, etc.
 
 | Term | Definition |
 |------|-----------|
-| **TradeAlgo** | A named, identifiable pipeline instance with full configuration |
+| **AlgoTrade** | A named, identifiable pipeline instance with full configuration |
 | **Provider** | A data source adapter that fetches OHLCV data from a market |
 | **Strategy** | A decision engine that evaluates enriched data and produces signals |
 | **Signal** | An actionable trading alert with direction, price, pattern, and metadata |

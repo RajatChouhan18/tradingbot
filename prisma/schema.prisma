@@ -1,0 +1,396 @@
+// AuraTrade Master Prisma Schema
+// Provider: PostgreSQL / TimescaleDB
+// Interface: Python AsyncIO (prisma-client-py)
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider                   = "prisma-client-py"
+  interface                  = "asyncio"
+  recursive_type_depth       = 5
+  enable_experimental_decimal = true
+}
+
+// =========================================================================
+// 1. Roles & Dynamic Module Permissions Matrix (Module 1)
+// =========================================================================
+model Role {
+  id           String           @id @default(uuid())
+  name         String           @unique // "ADMIN", "TRADER", "AUDITOR", or custom
+  description  String?          @default("")
+  isSystemRole Boolean          @default(false) @map("is_system_role")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  createdBy    String?          @default("SYSTEM") @map("created_by")
+  updatedBy    String?          @default("SYSTEM") @map("updated_by")
+
+  users        User[]
+  permissions  RolePermission[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  id         String   @id @default(uuid())
+  roleId     String   @map("role_id")
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  moduleKey  String   @map("module_key") // "MARKETVIEW", "EVENT_TRIGGERS", "ALGOTRADE", "PAPER_TRADING", "CATALOG", "TEST_WORKBENCH", "THEME_STUDIO", "USER_MANAGEMENT"
+  canView    Boolean  @default(false) @map("can_view")
+  canEdit    Boolean  @default(false) @map("can_edit")
+  canDelete  Boolean  @default(false) @map("can_delete")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  createdBy  String?  @default("SYSTEM") @map("created_by")
+  updatedBy  String?  @default("SYSTEM") @map("updated_by")
+
+  @@unique([roleId, moduleKey])
+  @@map("role_permissions")
+}
+
+// =========================================================================
+// 2. User & Database-Stored Session Tokens (Module 1)
+// =========================================================================
+model User {
+  id           String        @id @default(uuid())
+  username     String        @unique
+  email        String        @unique
+  passwordHash String        @map("password_hash")
+  roleId       String        @map("role_id")
+  role         Role          @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  createdBy    String?       @default("SYSTEM") @map("created_by")
+  updatedBy    String?       @default("SYSTEM") @map("updated_by")
+
+  sessions           UserSession[]
+  balance            AccountBalance?
+  balanceAdjustments BalanceAdjustmentLog[]
+  algoTrades         AlgoTrade[]
+  terminalConfig     UserTerminalConfig?
+
+  @@map("users")
+}
+
+model UserTerminalConfig {
+  id               String   @id @default(uuid())
+  userId           String   @unique @map("user_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultMarket    String   @default("INDIAN_EQUITY") @map("default_market")
+  defaultSymbol    String   @default("RELIANCE") @map("default_symbol")
+  defaultTimeframe String   @default("5m") @map("default_timeframe")
+  defaultOverlays  String   @default("EMA_9,EMA_21,VWAP") @map("default_overlays")
+  defaultPatterns  String   @default("ALL") @map("default_patterns")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdBy        String?  @default("SYSTEM") @map("created_by")
+  updatedBy        String?  @default("SYSTEM") @map("updated_by")
+
+  @@map("user_terminal_configs")
+}
+
+model UserSession {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique @map("token_hash")
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([tokenHash, expiresAt])
+  @@map("user_sessions")
+}
+
+// =========================================================================
+// 3. Virtual Cash Account Balance & Top-Up Audit (Module 1)
+// =========================================================================
+model AccountBalance {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cashBalance Decimal  @default(1000000.0000) @map("cash_balance") @db.Decimal(18, 4)
+  currency    String   @default("INR")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String?  @default("SYSTEM") @map("created_by")
+  updatedBy   String?  @default("SYSTEM") @map("updated_by")
+
+  @@map("account_balances")
+}
+
+model BalanceAdjustmentLog {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adjustedBy    String   @map("adjusted_by") // SuperAdmin email or ID
+  amount        Decimal  @map("amount") @db.Decimal(18, 4)
+  balanceBefore Decimal  @map("balance_before") @db.Decimal(18, 4)
+  balanceAfter  Decimal  @map("balance_after") @db.Decimal(18, 4)
+  reason        String   @default("Admin Manual Top-Up")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  createdBy     String?  @default("SYSTEM") @map("created_by")
+  updatedBy     String?  @default("SYSTEM") @map("updated_by")
+
+  @@map("balance_adjustment_logs")
+}
+
+// =========================================================================
+// 4. AlgoTrade Process Model & Strategy Engine (Module 5)
+// =========================================================================
+enum Direction {
+  CALL
+  PUT
+  NEUTRAL
+}
+
+enum SignalStatus {
+  APPROVED
+  BLOCKED
+  REJECTED
+  PENDING
+}
+
+enum AlgoTradeStatus {
+  IDLE
+  RUNNING
+  PAUSED
+  STOPPED
+  ERROR
+}
+
+enum TradeOutcome {
+  WIN
+  LOSS
+  TIMEOUT
+}
+
+model AlgoTrade {
+  id              String          @id @default(uuid())
+  algoId          String          @unique @map("algo_id") // e.g. AT-NiftyScalper-20261002-1234AB
+  userId          String          @map("user_id")
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  algoName        String          @map("algo_name")
+  market          String          @default("INDIAN_EQUITY")
+  timeframe       String          @default("5m")
+  symbols         Json            // Array of string tickers
+  indices         Json            // Benchmark sector indices
+  indicators      Json            // Selected indicators & configs
+  patterns        Json            // Detectable patterns
+  riskRewardRatio Float           @default(1.5) @map("risk_reward_ratio")
+  status          AlgoTradeStatus @default(IDLE)
+  
+  startTime       String?         @map("start_time")
+  stopTime        String?         @map("stop_time")
+  startDate       String?         @map("start_date")
+  endDate         String?         @map("end_date")
+  chartEnabled    Boolean         @default(true) @map("chart_enabled")
+  auditEnabled    Boolean         @default(true) @map("audit_enabled")
+  description     String?         @default("")
+  isDeleted       Boolean         @default(false) @map("is_deleted")
+  
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  signals         Signal[]
+  pnlTrades       PnlTrade[]
+  auditEvents     AuditEvent[]
+
+  @@map("algo_trades")
+}
+
+// =========================================================================
+// 5. Trade Signals & Actionable Lifecycle
+// =========================================================================
+model Signal {
+  id             String       @id @default(uuid())
+  signalId       String       @unique @map("signal_id")
+  algoTradeId    String       @map("algo_trade_id")
+  algoTrade      AlgoTrade    @relation(fields: [algoTradeId], references: [id], onDelete: Cascade)
+  
+  symbol         String
+  direction      Direction
+  pattern        String
+  price          Float
+  level          Float
+  stopLoss       Float        @map("stop_loss")
+  target         Float
+  timeframe      String       @default("5m")
+  provider       String       @default("HYBRID")
+  newsStatus     String       @default("CLEAR") @map("news_status")
+  status         SignalStatus @default(APPROVED)
+  reason         String
+  
+  chartPath      String?      @map("chart_path")
+  auditChartPath String?      @map("audit_chart_path")
+  metadata       Json?
+  candleTime     DateTime     @map("candle_time")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  pnlTrades      PnlTrade[]
+  dispatchLogs   DispatchLog[]
+
+  @@index([symbol, candleTime])
+  @@map("signals")
+}
+
+// =========================================================================
+// 6. Closed Trade Outcomes & PnL Analytics
+// =========================================================================
+model PnlTrade {
+  id          String       @id @default(uuid())
+  signalId    String?      @map("signal_id")
+  signal      Signal?      @relation(fields: [signalId], references: [id], onDelete: SetNull)
+  algoTradeId String       @map("algo_trade_id")
+  algoTrade   AlgoTrade    @relation(fields: [algoTradeId], references: [id], onDelete: Cascade)
+  
+  symbol      String
+  direction   Direction
+  pattern     String
+  entryPrice  Float        @map("entry_price")
+  exitPrice   Float        @map("exit_price")
+  pnlPct      Float        @map("pnl_pct")
+  pnlPoints   Float        @map("pnl_points")
+  outcome     TradeOutcome
+  holdingBars Int          @default(0) @map("holding_bars")
+  
+  entryTime   DateTime     @map("entry_time")
+  exitTime    DateTime     @map("exit_time")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@map("pnl_trades")
+}
+
+// =========================================================================
+// 7. Audit Trail & Logs
+// =========================================================================
+model AuditEvent {
+  id                String    @id @default(uuid())
+  algoTradeId       String    @map("algo_trade_id")
+  algoTrade         AlgoTrade @relation(fields: [algoTradeId], references: [id], onDelete: Cascade)
+  
+  symbol            String
+  eventType         String    @map("event_type")
+  indicatorSnapshot Json      @map("indicator_snapshot")
+  levelSnapshot     Json      @map("level_snapshot")
+  decisionReason    String    @map("decision_reason")
+  latencyMs         Int       @default(0) @map("latency_ms")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@index([algoTradeId, createdAt])
+  @@map("audit_events")
+}
+
+model DispatchLog {
+  id           String    @id @default(uuid())
+  signalId     String    @map("signal_id")
+  signal       Signal    @relation(fields: [signalId], references: [id], onDelete: Cascade)
+  
+  channel      String    @default("TELEGRAM")
+  recipientId  String    @map("recipient_id")
+  status       String    
+  errorMessage String?   @map("error_message")
+  hasDocument  Boolean   @default(false) @map("has_document")
+  latencyMs    Int       @default(0) @map("latency_ms")
+  sentAt       DateTime  @default(now()) @map("sent_at")
+
+  @@map("dispatch_logs")
+}
+
+model StructuredLog {
+  id        String   @id @default(uuid())
+  level     String   
+  source    String   
+  message   String
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([level, source, createdAt])
+  @@map("structured_logs")
+}
+
+// =========================================================================
+// 8. Market Groups & Seeded Symbols (Module 2)
+// =========================================================================
+model MarketGroup {
+  id          String         @id @default(uuid())
+  groupId     String         @unique @map("group_id")
+  name        String         
+  market      String         
+  description String?
+  symbols     MarketSymbol[]
+
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  createdBy   String?        @default("SYSTEM") @map("created_by")
+  updatedBy   String?        @default("SYSTEM") @map("updated_by")
+
+  @@map("market_groups")
+}
+
+model MarketSymbol {
+  id            String       @id @default(uuid())
+  symbol        String       @unique
+  shortName     String       @map("short_name")
+  fullName      String       @map("full_name")
+  market        String       
+  exchange      String       
+  assetType     String       @default("STOCK") @map("asset_type")
+  sector        String?      
+  indexGroup    String?      @map("index_group")
+  decimalPlaces Int          @default(4) @map("decimal_places")
+  
+  groupId       String?      @map("group_id")
+  group         MarketGroup? @relation(fields: [groupId], references: [groupId], onDelete: SetNull)
+
+  lotSize       Int          @default(1) @map("lot_size")
+  tickSize      Float        @default(0.05) @map("tick_size")
+  tvSymbol      String?      @map("tv_symbol")
+  isPreseeded   Boolean      @default(false) @map("is_preseeded")
+  isActive      Boolean      @default(true) @map("is_active")
+  isDeleted     Boolean      @default(false) @map("is_deleted")
+  deletedAt     DateTime?    @map("deleted_at")
+
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  createdBy     String?      @default("SYSTEM") @map("created_by")
+  updatedBy     String?      @default("SYSTEM") @map("updated_by")
+
+  @@index([market, isActive, isDeleted])
+  @@index([groupId, isActive, isDeleted])
+  @@index([indexGroup])
+  @@index([assetType])
+  @@map("market_symbols")
+}
+
+// =========================================================================
+// 9. Unified Market Candles (Module 2 & 3)
+// Old & new candles reside in ONE table; timestamp defines historical factor.
+// =========================================================================
+model MarketCandle {
+  id        String   @id @default(uuid())
+  symbol    String
+  timeframe String   // "1m", "5m", "15m", "1h", "1d"
+  timestamp DateTime
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    Float    @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @default("SYSTEM") @map("created_by")
+  updatedBy String?  @default("SYSTEM") @map("updated_by")
+
+  @@unique([symbol, timeframe, timestamp])
+  @@index([symbol, timeframe, timestamp(sort: Desc)])
+  @@map("market_candles")
+}

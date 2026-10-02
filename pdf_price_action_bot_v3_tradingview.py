@@ -130,7 +130,7 @@ def scan_pair(pair: str):
         print(f"{pair}: SIGNAL BLOCKED - {block_reason}")
         return None
 
-    return signal, completed
+    return signal, df
 
 
 def main():
@@ -162,7 +162,7 @@ def main():
                     time.sleep(PAIR_REQUEST_DELAY)
                     continue
 
-                signal, completed_df = res
+                signal, raw_candles_df = res
 
                 # Deduplication Check: Prevent re-alerting on the same setup
                 if deduplicator.is_duplicate(signal.pair, signal.pattern, signal.candle_time):
@@ -184,7 +184,7 @@ def main():
                 chart_path = None
                 try:
                     chart_path = create_interactive_chart(
-                        completed_df,
+                        raw_candles_df,
                         symbol=signal.pair,
                         signal=signal,
                         support_level=signal.level if signal.direction.value == "CALL" else None,

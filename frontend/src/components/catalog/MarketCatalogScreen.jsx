@@ -151,9 +151,9 @@ export default function MarketCatalogScreen({ showToast }) {
     }
   };
 
-  // Reset Filters to defaults (Market: 'NSE', Status: 'ALL', Search: '')
+  // Reset Filters to defaults (Market: 'ALL', Status: 'ALL', Search: '')
   const handleResetFilters = () => {
-    setMarketFilter('NSE');
+    setMarketFilter('ALL');
     setStatusFilter('ALL');
     setSearchQuery('');
     setPage(0);
@@ -442,9 +442,28 @@ export default function MarketCatalogScreen({ showToast }) {
                     <Typography variant="body1" sx={{ color: 'var(--text-main, #FFFFFF)', fontWeight: 700, fontSize: '1rem' }}>
                       No market assets match the selected filter criteria.
                     </Typography>
-                    <Typography variant="caption" sx={{ color: 'var(--text-muted, #98989D)', mt: 0.5, display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'var(--text-muted, #98989D)', mt: 0.5, mb: 1.5, display: 'block' }}>
                       Try selecting a different market (e.g. All Markets) or resetting filters.
                     </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={handleResetFilters}
+                      startIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                      sx={{
+                        color: '#38bdf8',
+                        borderColor: 'rgba(56, 189, 248, 0.4)',
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        borderRadius: 2,
+                        '&:hover': {
+                          borderColor: '#38bdf8',
+                          bgcolor: 'rgba(56, 189, 248, 0.1)',
+                        },
+                      }}
+                    >
+                      Reset All Filters
+                    </Button>
                   </TableCell>
                 </TableRow>
               ) : (

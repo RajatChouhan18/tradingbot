@@ -161,7 +161,27 @@ export const api = {
     if (market) params.append('market', market);
     return request(`/marketview/quote?${params.toString()}`);
   },
+
+  // Event Triggers Engine (Module 4)
+  listEventTriggers: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') {
+        query.append(k, v);
+      }
+    });
+    return request(`/v1/events?${query.toString()}`);
+  },
+  createEventTrigger: (data) => request('/v1/events', { method: 'POST', body: JSON.stringify(data) }),
+  getEventTrigger: (id) => request(`/v1/events/${id}`),
+  updateEventTrigger: (id, data) => request(`/v1/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  toggleEventTriggerStatus: (id, status) => request(`/v1/events/${id}/status?target_status=${status}`, { method: 'PATCH' }),
+  deleteEventTrigger: (id) => request(`/v1/events/${id}`, { method: 'DELETE' }),
+  simulateEventTrigger: (data) => request('/v1/events/simulate', { method: 'POST', body: JSON.stringify(data) }),
+  testEventTrigger: (id, sendAlert = false) => request(`/v1/events/${id}/test?send_alert=${sendAlert}`, { method: 'POST' }),
+  getEventTriggerLogs: (id, limit = 50) => request(`/v1/events/${id}/logs?limit=${limit}`),
 };
+
 
 /**
  * Connects to the real-time Server-Sent Events (SSE) telemetry stream.

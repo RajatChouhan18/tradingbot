@@ -394,3 +394,98 @@ model MarketCandle {
   @@index([symbol, timeframe, timestamp(sort: Desc)])
   @@map("market_candles")
 }
+
+// =========================================================================
+// 10. Event Triggers & Multi-Channel Alert Logs (Module 4)
+// =========================================================================
+enum TriggerType {
+  CANDLE_PATTERN
+  PRICE_SPIKE
+  VOLUME_SPIKE
+  SR_BREAK
+  INDICATOR_CROSS
+}
+
+enum TriggerStatus {
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+enum ChannelType {
+  TELEGRAM
+  WHATSAPP
+  WEBHOOK
+  EMAIL
+}
+
+model EventTrigger {
+  id              String         @id @default(uuid())
+  name            String
+  symbol          String         // e.g. "RELIANCE", "BTCUSDT"
+  market          String         @default("INDIAN_EQUITY")
+  timeframe       String         @default("5m")
+  triggerType     TriggerType    @map("trigger_type")
+  
+  // Rule configuration parameters (JSON containing threshold %, periods, pattern names, etc.)
+  thresholdConfig Json           @map("threshold_config")
+  
+  // Selected messaging channels array (e.g. ["TELEGRAM", "WHATSAPP"])
+  channels        Json           @default("[\"TELEGRAM\"]")
+  
+  // Channel target overrides (e.g. custom chat IDs or numbers)
+  channelTargets  Json?          @map("channel_targets")
+  
+  status          TriggerStatus  @default(ACTIVE)
+  lastTriggeredAt DateTime?      @map("last_triggered_at")
+  triggerCount    Int            @default(0) @map("trigger_count")
+  
+  // Institutional Soft-Delete
+  isDeleted       Boolean        @default(false) @map("is_deleted")
+  deletedAt       DateTime?      @map("deleted_at")
+  
+  // Mandatory Institutional Audit Tracking
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  createdBy       String?        @default("SYSTEM") @map("created_by")
+  updatedBy       String?        @default("SYSTEM") @map("updated_by")
+
+  executionLogs   TriggerExecutionLog[]
+
+  @@index([symbol, market, status, isDeleted])
+  @@index([triggerType, status, isDeleted])
+  @@map("event_triggers")
+}
+
+model TriggerExecutionLog {
+  id               String       @id @default(uuid())
+  triggerId        String       @map("trigger_id")
+  trigger          EventTrigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+  
+  symbol           String
+  market           String
+  timeframe        String
+  triggerType      TriggerType  @map("trigger_type")
+  triggerPrice     Float        @map("trigger_price")
+  
+  // Diagnostic & Evaluated Data Snapshot
+  conditionsMet    Json         @map("conditions_met")
+  candleTimestamp  DateTime     @map("candle_timestamp")
+  
+  // Dispatch telemetry
+  channelsNotified Json         @map("channels_notified")
+  dispatchSuccess  Boolean      @default(true) @map("dispatch_success")
+  latencyMs        Int          @default(0) @map("latency_ms")
+  errorMessage     String?      @map("error_message")
+  
+  // Mandatory Institutional Audit Tracking
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  createdBy        String?      @default("SYSTEM") @map("created_by")
+  updatedBy        String?      @default("SYSTEM") @map("updated_by")
+
+  @@index([triggerId, createdAt(sort: Desc)])
+  @@index([symbol, candleTimestamp])
+  @@map("trigger_execution_logs")
+}
+

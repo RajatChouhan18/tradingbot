@@ -39,13 +39,13 @@ class BalanceTopupRequest(BaseModel):
 
 
 class UpdateTerminalConfigRequest(BaseModel):
-    default_market: Optional[str] = Field(default="INDIAN_EQUITY")
-    default_symbol: Optional[str] = Field(default="RELIANCE")
-    default_timeframe: Optional[str] = Field(default="5m")
+    default_market: Optional[str] = Field(default=None)
+    default_symbol: Optional[str] = Field(default=None)
+    default_timeframe: Optional[str] = Field(default=None)
     default_indicators: Optional[str] = Field(default=None)
-    default_overlays: Optional[str] = Field(default="EMA_9,EMA_21,VWAP")
+    default_overlays: Optional[str] = Field(default=None)
     default_candles: Optional[str] = Field(default=None)
-    default_patterns: Optional[str] = Field(default="ALL")
+    default_patterns: Optional[str] = Field(default=None)
 
 
 # =========================================================================
@@ -323,11 +323,23 @@ async def update_my_terminal_config(
     """
     Saves and persists the authenticated user's isolated MarketView terminal preferences.
     """
-    clean_market = (req.default_market or "INDIAN_EQUITY").strip().upper()
-    clean_symbol = (req.default_symbol or "RELIANCE").strip().upper()
-    clean_tf = (req.default_timeframe or "5m").strip().lower()
-    clean_overlays = (req.default_indicators or req.default_overlays or "EMA_9,EMA_21,VWAP").strip()
-    clean_patterns = (req.default_candles or req.default_patterns or "ALL").strip()
+    clean_market = (req.default_market.strip().upper() if req.default_market is not None else "INDIAN_EQUITY")
+    clean_symbol = (req.default_symbol.strip().upper() if req.default_symbol is not None else "RELIANCE")
+    clean_tf = (req.default_timeframe.strip().lower() if req.default_timeframe is not None else "5m")
+
+    if req.default_indicators is not None:
+        clean_overlays = req.default_indicators.strip()
+    elif req.default_overlays is not None:
+        clean_overlays = req.default_overlays.strip()
+    else:
+        clean_overlays = "EMA_9,EMA_21,VWAP"
+
+    if req.default_candles is not None:
+        clean_patterns = req.default_candles.strip()
+    elif req.default_patterns is not None:
+        clean_patterns = req.default_patterns.strip()
+    else:
+        clean_patterns = "ALL"
 
     config = await db.userterminalconfig.upsert(
         where={"userId": current_user.id},

@@ -107,7 +107,7 @@ export default function Sidebar({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null, moduleKey: null },
     { id: 'market', label: 'MarketView', icon: LineChart, badge: null, moduleKey: 'MARKETVIEW' },
     { id: 'terminal_config', label: 'Terminal Config', icon: Sliders, badge: null, moduleKey: 'MARKETVIEW' },
-    { id: 'events', label: 'Event Triggers', icon: Radio, badge: null, moduleKey: 'EVENT_TRIGGERS' },
+    { id: 'events', label: 'Event WatchDog', icon: Radio, badge: null, moduleKey: 'EVENT_TRIGGERS' },
     { id: 'algotrade', label: 'AlgoTrade', icon: Zap, badge: algosCount || null, moduleKey: 'ALGOTRADE' },
     { id: 'paper', label: 'Paper Trading', icon: Activity, badge: openPositionsCount || null, moduleKey: 'PAPER_TRADING' },
     { id: 'catalog', label: 'Market Catalog', icon: Layers, badge: null, moduleKey: 'CATALOG' },
@@ -135,8 +135,8 @@ export default function Sidebar({
         minWidth: currentWidth,
         maxWidth: isCollapsed ? 58 : 340,
         height: '100vh',
-        bgcolor: isEnterprise ? '#1B3A6B' : '#121212',
-        borderRight: `1px solid ${isEnterprise ? '#152E56' : '#2C2C2E'}`,
+        bgcolor: isEnterprise ? '#FFFFFF' : '#121212',
+        borderRight: `1px solid ${isEnterprise ? '#E2E8F0' : '#2C2C2E'}`,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -149,7 +149,7 @@ export default function Sidebar({
       }}
     >
       <Box>
-        {/* Brand Header with Centered AuraTrade Title & Side Hamburger Icon (v2.0 removed) */}
+        {/* Brand Header with Centered AuraTrade Title & Side Hamburger Icon */}
         {!isCollapsed ? (
           <Box
             sx={{
@@ -159,7 +159,7 @@ export default function Sidebar({
               px: 0.2,
               py: 0.8,
               mb: 1.2,
-              borderBottom: `1px solid ${isEnterprise ? 'rgba(255, 255, 255, 0.15)' : '#2C2C2E'}`,
+              borderBottom: `1px solid ${isEnterprise ? '#E2E8F0' : '#2C2C2E'}`,
             }}
           >
             <Tooltip title="Collapse sidebar" placement="bottom">
@@ -168,9 +168,9 @@ export default function Sidebar({
                 onClick={toggleCollapse}
                 sx={{
                   p: 0.4,
-                  color: '#98989D',
+                  color: isEnterprise ? '#64748B' : '#98989D',
                   borderRadius: 1.2,
-                  '&:hover': { color: '#ffffff', bgcolor: 'rgba(255,255,255,0.08)' }
+                  '&:hover': { color: isEnterprise ? '#0F172A' : '#ffffff', bgcolor: isEnterprise ? '#F1F5F9' : 'rgba(255,255,255,0.08)' }
                 }}
               >
                 <Menu size={15} />
@@ -182,8 +182,8 @@ export default function Sidebar({
                 variant="subtitle1"
                 sx={{
                   fontWeight: 800,
-                  fontSize: '1.0rem', // Increased title size
-                  color: '#ffffff',
+                  fontSize: '1.25rem',
+                  color: isEnterprise ? '#0F172A' : '#ffffff',
                   letterSpacing: '-0.02em',
                   textAlign: 'center',
                 }}
@@ -202,7 +202,7 @@ export default function Sidebar({
               py: 0.8,
               mb: 1.2,
               gap: 0.5,
-              borderBottom: `1px solid ${isEnterprise ? 'rgba(255, 255, 255, 0.15)' : '#2C2C2E'}`,
+              borderBottom: `1px solid ${isEnterprise ? '#E2E8F0' : '#2C2C2E'}`,
             }}
           >
             <Tooltip title="Expand sidebar" placement="right">
@@ -211,9 +211,9 @@ export default function Sidebar({
                 onClick={toggleCollapse}
                 sx={{
                   p: 0.4,
-                  color: '#98989D',
+                  color: isEnterprise ? '#64748B' : '#98989D',
                   borderRadius: 1.2,
-                  '&:hover': { color: '#ffffff', bgcolor: 'rgba(255,255,255,0.08)' }
+                  '&:hover': { color: isEnterprise ? '#0F172A' : '#ffffff', bgcolor: isEnterprise ? '#F1F5F9' : 'rgba(255,255,255,0.08)' }
                 }}
               >
                 <Menu size={15} />
@@ -228,11 +228,11 @@ export default function Sidebar({
             const Icon = item.icon;
             const isActive = currentModule === item.id;
 
-            const activeBg = isEnterprise ? '#EBEEF2' : '#2563EB';
-            const activeColor = isEnterprise ? '#1B3A6B' : '#ffffff';
-            const inactiveColor = isEnterprise ? 'rgba(255, 255, 255, 0.8)' : '#98989D';
-            const activeIconColor = isEnterprise ? '#1B3A6B' : '#ffffff';
-            const inactiveIconColor = isEnterprise ? 'rgba(255, 255, 255, 0.65)' : '#98989D';
+            const activeBg = isEnterprise ? '#EFF6FF' : '#2563EB';
+            const activeColor = isEnterprise ? '#2563EB' : '#ffffff';
+            const inactiveColor = isEnterprise ? '#64748B' : '#98989D';
+            const activeIconColor = isEnterprise ? '#2563EB' : '#ffffff';
+            const inactiveIconColor = isEnterprise ? '#64748B' : '#98989D';
 
             return (
               <ListItem key={item.id} disablePadding sx={{ display: 'block' }}>
@@ -257,9 +257,9 @@ export default function Sidebar({
                         bgcolor: isActive 
                           ? activeBg 
                           : isEnterprise 
-                            ? 'rgba(255, 255, 255, 0.08)' 
+                            ? '#F8FAFC' 
                             : 'rgba(255, 255, 255, 0.05)',
-                        color: isActive ? activeColor : '#ffffff',
+                        color: isActive ? activeColor : isEnterprise ? '#0F172A' : '#ffffff',
                       },
                     }}
                   >
@@ -290,7 +290,7 @@ export default function Sidebar({
                       <ListItemText
                         primary={item.label}
                         primaryTypographyProps={{
-                          fontSize: '0.62rem', // Decreased option size
+                          fontSize: '0.62rem',
                           fontWeight: isActive ? 700 : 500,
                           noWrap: true,
                         }}
@@ -304,16 +304,18 @@ export default function Sidebar({
                         size="small"
                         sx={{
                           height: 15,
-                          fontSize: '0.52rem', // Compact badge
+                          fontSize: '0.52rem',
                           fontWeight: 700,
                           fontFamily: 'monospace',
                           bgcolor: isEnterprise 
-                            ? (isActive ? '#1B3A6B' : 'rgba(255, 255, 255, 0.15)') 
+                            ? (isActive ? 'rgba(37, 99, 235, 0.15)' : '#F1F5F9') 
                             : (isActive ? 'rgba(255, 255, 255, 0.25)' : '#1E1E1E'),
                           color: isEnterprise 
-                            ? '#ffffff' 
+                            ? (isActive ? '#2563EB' : '#64748B') 
                             : (isActive ? '#ffffff' : '#98989D'),
-                          border: isActive ? 'none' : '1px solid #2C2C2E',
+                          border: isEnterprise
+                            ? (isActive ? 'none' : '1px solid #E2E8F0')
+                            : (isActive ? 'none' : '1px solid #2C2C2E'),
                           '& .MuiChip-label': { px: 0.4 },
                         }}
                       />
@@ -330,48 +332,57 @@ export default function Sidebar({
       {!isCollapsed ? (
         <Box
           sx={{
-            p: 0.8,
-            borderRadius: 1.2,
-            bgcolor: isEnterprise ? 'rgba(0, 0, 0, 0.22)' : '#1E1E1E',
-            border: `1px solid ${isEnterprise ? 'rgba(255, 255, 255, 0.12)' : '#2C2C2E'}`,
+            p: 1.2,
+            borderRadius: 2,
+            bgcolor: isEnterprise ? '#F8FAFC' : '#1E1E1E',
+            border: `1px solid ${isEnterprise ? '#E2E8F0' : '#2C2C2E'}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.6,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
               <Box
                 sx={{
-                  width: 5,
-                  height: 5,
+                  width: 7,
+                  height: 7,
                   borderRadius: '50%',
-                  bgcolor: isMarketOpen ? '#32D74B' : '#FF453A',
-                  boxShadow: isMarketOpen ? '0 0 5px #32D74B' : '0 0 5px #FF453A',
+                  bgcolor: isMarketOpen ? (isEnterprise ? '#16A34A' : '#32D74B') : (isEnterprise ? '#DC2626' : '#FF453A'),
+                  boxShadow: isMarketOpen 
+                    ? (isEnterprise ? '0 0 6px #16A34A' : '0 0 6px #32D74B') 
+                    : (isEnterprise ? '0 0 6px #DC2626' : '0 0 6px #FF453A'),
                 }}
               />
               <Typography
                 sx={{
-                  fontSize: '0.56rem',
-                  fontWeight: 700,
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
                   textTransform: 'uppercase',
                   letterSpacing: '0.03em',
-                  color: isMarketOpen ? '#32D74B' : '#FF453A',
+                  color: isMarketOpen ? (isEnterprise ? '#16A34A' : '#32D74B') : (isEnterprise ? '#DC2626' : '#FF453A'),
                 }}
               >
                 {session.market_state || 'MARKET'}
               </Typography>
             </Box>
-            <Typography sx={{ fontSize: '0.56rem', color: '#98989D', fontFamily: 'monospace' }}>
+            <Typography sx={{ fontSize: '0.72rem', color: isEnterprise ? '#64748B' : '#98989D', fontFamily: 'monospace', fontWeight: 600 }}>
               {session.current_time || 'IST'}
             </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography sx={{ fontSize: '0.56rem', color: '#98989D' }}>VIX:</Typography>
+            <Typography sx={{ fontSize: '0.74rem', color: isEnterprise ? '#64748B' : '#98989D', fontWeight: 600 }}>India VIX:</Typography>
             <Typography
               sx={{
-                fontSize: '0.56rem',
-                fontWeight: 700,
-                fontFamily: 'monospace',
-                color: vix.regime === 'NORMAL' ? '#32D74B' : vix.regime === 'LOW' ? '#98989D' : '#FF453A',
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: vix.regime === 'NORMAL' 
+                  ? (isEnterprise ? '#16A34A' : '#32D74B') 
+                  : vix.regime === 'LOW' 
+                    ? (isEnterprise ? '#64748B' : '#98989D') 
+                    : (isEnterprise ? '#DC2626' : '#FF453A'),
               }}
             >
               {vix.value ? vix.value.toFixed(2) : '14.20'}
@@ -386,28 +397,30 @@ export default function Sidebar({
         >
           <Box
             sx={{
-              p: 0.8,
-              borderRadius: 1.5,
-              bgcolor: isEnterprise ? 'rgba(0, 0, 0, 0.22)' : '#1E1E1E',
-              border: `1px solid ${isEnterprise ? 'rgba(255, 255, 255, 0.12)' : '#2C2C2E'}`,
+              p: 1,
+              borderRadius: 2,
+              bgcolor: isEnterprise ? '#F8FAFC' : '#1E1E1E',
+              border: `1px solid ${isEnterprise ? '#E2E8F0' : '#2C2C2E'}`,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 0.4,
+              gap: 0.5,
               cursor: 'pointer',
             }}
           >
             <Box
               sx={{
-                width: 6,
-                height: 6,
+                width: 7,
+                height: 7,
                 borderRadius: '50%',
-                bgcolor: isMarketOpen ? '#32D74B' : '#FF453A',
-                boxShadow: isMarketOpen ? '0 0 5px #32D74B' : '0 0 5px #FF453A',
+                bgcolor: isMarketOpen ? (isEnterprise ? '#16A34A' : '#32D74B') : (isEnterprise ? '#DC2626' : '#FF453A'),
+                boxShadow: isMarketOpen 
+                  ? (isEnterprise ? '0 0 6px #16A34A' : '0 0 6px #32D74B') 
+                  : (isEnterprise ? '0 0 6px #DC2626' : '0 0 6px #FF453A'),
               }}
             />
-            <Typography sx={{ fontSize: '0.52rem', color: '#98989D', fontFamily: 'monospace', fontWeight: 700 }}>
+            <Typography sx={{ fontSize: '0.68rem', color: isEnterprise ? '#64748B' : '#98989D', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
               {session.current_time ? session.current_time.slice(0, 5) : 'IST'}
             </Typography>
           </Box>

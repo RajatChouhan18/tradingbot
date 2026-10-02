@@ -24,20 +24,20 @@ export const THEMES = [
   },
   {
     id: 'enterprise',
-    name: 'Enterprise Portal',
-    subtitle: 'NOSSA Corporate Navy',
-    badge: 'NOSSA Seguros Design',
-    tagline: 'Corporate banking & billing portal aesthetic with navy headers and slate canvas.',
+    name: 'Institutional Light Pro',
+    subtitle: 'AuraTrade Light Dashboard ("frontend-design-framework.md")',
+    badge: 'MUI Light Standard',
+    tagline: 'Clean institutional cool slate-gray/blue workstation (#EEF2F6 / #F8FAFC) with #2563EB sapphire accents.',
     colors: {
-      primary: '#1B3A6B',
-      bg: '#EBEEF2',
-      card: '#FFFFFF',
-      border: '#D5D8DC',
-      text: '#1A1A2E',
-      textSecondary: '#5D6D7E',
-      bullish: '#82B440',
-      bearish: '#C0392B',
-      accent: '#82B440',
+      primary: '#2563EB',
+      bg: '#EEF2F6',
+      card: '#F8FAFC',
+      border: '#CBD5E1',
+      text: '#0F172A',
+      textSecondary: '#475569',
+      bullish: '#16A34A',
+      bearish: '#DC2626',
+      accent: '#2563EB',
     },
   },
 ];
@@ -87,27 +87,30 @@ export function ThemeProvider({ children }) {
       palette: {
         mode: isDark ? 'dark' : 'light',
         primary: {
-          main: isDark ? '#2563EB' : '#1B3A6B',
+          main: '#2563EB',
           contrastText: '#FFFFFF',
         },
         secondary: {
-          main: isDark ? '#32D74B' : '#82B440',
+          main: isDark ? '#32D74B' : '#16A34A',
         },
         error: {
-          main: isDark ? '#FF453A' : '#C0392B',
+          main: isDark ? '#FF453A' : '#DC2626',
+        },
+        warning: {
+          main: isDark ? '#FF9F0A' : '#D97706',
         },
         success: {
-          main: isDark ? '#32D74B' : '#82B440',
+          main: isDark ? '#32D74B' : '#16A34A',
         },
         background: {
-          default: isDark ? '#121212' : '#EBEEF2',
-          paper: isDark ? '#1E1E1E' : '#FFFFFF',
+          default: isDark ? '#121212' : '#EEF2F6',
+          paper: isDark ? '#1E1E1E' : '#F8FAFC',
         },
         text: {
-          primary: isDark ? '#FFFFFF' : '#1A1A2E',
-          secondary: isDark ? '#98989D' : '#5D6D7E',
+          primary: isDark ? '#FFFFFF' : '#0F172A',
+          secondary: isDark ? '#98989D' : '#475569',
         },
-        divider: isDark ? '#2C2C2E' : '#D5D8DC',
+        divider: isDark ? '#2C2C2E' : '#CBD5E1',
       },
       shape: {
         borderRadius: 12,
@@ -121,7 +124,9 @@ export function ThemeProvider({ children }) {
             root: {
               borderRadius: 16,
               backgroundImage: 'none',
-              border: isDark ? '1px solid #2C2C2E' : '1px solid #D5D8DC',
+              border: isDark ? '1px solid #2C2C2E' : '1px solid #CBD5E1',
+              backgroundColor: isDark ? '#1E1E1E' : '#F8FAFC',
+              boxShadow: isDark ? '0 4px 20px rgba(0, 0, 0, 0.35)' : '0 2px 12px rgba(15, 23, 42, 0.05)',
             },
           },
         },
@@ -129,6 +134,23 @@ export function ThemeProvider({ children }) {
           styleOverrides: {
             root: {
               backgroundImage: 'none',
+              backgroundColor: isDark ? '#1E1E1E' : '#F8FAFC',
+              border: isDark ? '1px solid #2C2C2E' : '1px solid #CBD5E1',
+            },
+          },
+        },
+        MuiTableCell: {
+          styleOverrides: {
+            root: {
+              borderBottom: isDark ? '1px solid #2C2C2E' : '1px solid #E2E8F0',
+              color: isDark ? '#FFFFFF' : '#0F172A',
+            },
+            head: {
+              backgroundColor: isDark ? '#181818' : '#F8FAFC',
+              color: isDark ? '#98989D' : '#64748B',
+              fontWeight: 700,
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
             },
           },
         },
@@ -139,6 +161,50 @@ export function ThemeProvider({ children }) {
               textTransform: 'none',
               fontWeight: 600,
             },
+          },
+        },
+        MuiSelect: {
+          defaultProps: {
+            MenuProps: {
+              anchorOrigin: {
+                vertical: 'bottom',
+                horizontal: 'left',
+              },
+              transformOrigin: {
+                vertical: 'top',
+                horizontal: 'left',
+              },
+              autoFocus: false,
+              disableAutoFocusItem: true,
+              disableRestoreFocus: true,
+            },
+          },
+        },
+        MuiMenu: {
+          defaultProps: {
+            autoFocus: false,
+            disableAutoFocusItem: true,
+            disableRestoreFocus: true,
+            anchorOrigin: {
+              vertical: 'bottom',
+              horizontal: 'left',
+            },
+            transformOrigin: {
+              vertical: 'top',
+              horizontal: 'left',
+            },
+          },
+          styleOverrides: {
+            paper: {
+              backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
+              border: isDark ? '1px solid #2C2C2E' : '1px solid #E2E8F0',
+              boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.5)' : '0 10px 30px rgba(0,0,0,0.08)',
+            },
+          },
+        },
+        MuiPopover: {
+          defaultProps: {
+            disableRestoreFocus: true,
           },
         },
       },

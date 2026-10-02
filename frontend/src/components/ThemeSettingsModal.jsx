@@ -117,7 +117,7 @@ export default function ThemeSettingsModal() {
                       {t.id === 'obsidian' ? (
                         <Moon style={{ width: '18px', height: '18px', color: '#60a5fa' }} />
                       ) : (
-                        <Building2 style={{ width: '18px', height: '18px', color: '#82B440' }} />
+                        <Sun style={{ width: '18px', height: '18px', color: '#D97706' }} />
                       )}
                       <span style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)' }}>
                         {t.name}

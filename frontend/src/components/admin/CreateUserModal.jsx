@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -16,13 +16,30 @@ import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import { api } from '../../api';
 
 export default function CreateUserModal({ open, onClose, roles = [], onSuccess }) {
+  const getTraderRoleId = () => {
+    const trader = roles.find((r) => r.name === 'TRADER');
+    return trader ? trader.id : (roles.length > 0 ? roles[0].id : '');
+  };
+
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [roleId, setRoleId] = useState(roles.length > 0 ? roles[0].id : '');
+  const [roleId, setRoleId] = useState('');
   const [initialBalance, setInitialBalance] = useState(1000000);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setEmail('');
+      setUsername('');
+      setPassword('');
+      setRoleId(getTraderRoleId());
+      setInitialBalance(1000000);
+      setError('');
+      setLoading(false);
+    }
+  }, [open, roles]);
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();

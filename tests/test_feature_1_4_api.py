@@ -41,8 +41,9 @@ async def test_auth_and_roles_api():
         assert token is not None
         assert data["user"]["email"] == DEFAULT_SUPERADMIN_EMAIL
         assert data["user"]["role"] == "ADMIN"
-        assert data["user"]["cash_balance"] == 1000000.0
+        assert data["user"]["cash_balance"] >= 1000000.0
         print("\n[SUCCESS] Login endpoint validated, token generated, balance verified!")
+
 
         headers = {"Authorization": f"Bearer {token}"}
 

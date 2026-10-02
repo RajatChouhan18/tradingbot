@@ -38,7 +38,7 @@ import CreateUserModal from './CreateUserModal';
 
 const MODULE_LABELS = {
   MARKETVIEW: 'MarketView (Live Data & Charts)',
-  EVENT_TRIGGERS: 'Event Triggers (Signal Watcher)',
+  EVENT_TRIGGERS: 'Event WatchDog',
   ALGOTRADE: 'AlgoTrade (Composite Strategies)',
   PAPER_TRADING: 'Paper Trading Execution',
   CATALOG: 'Market Catalog Directory',
@@ -307,9 +307,6 @@ export default function UserManagementScreen() {
                               color={getRoleColor(r.name)}
                               sx={{ fontWeight: 800, fontSize: '0.85rem' }}
                             />
-                            {r.is_system_role && (
-                              <Chip label="System Protected" size="small" variant="outlined" />
-                            )}
                             <Typography variant="body2" color="text.secondary">
                               {r.description || 'No description provided'}
                             </Typography>

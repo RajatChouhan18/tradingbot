@@ -24,8 +24,9 @@ import { api } from '../../api';
 
 const MODULE_LABELS = {
   MARKETVIEW: 'MarketView (Live Data & Charts)',
-  EVENT_TRIGGERS: 'Event Triggers (Signal Watcher)',
+  EVENT_TRIGGERS: 'Event WatchDog',
   ALGOTRADE: 'AlgoTrade (Composite Strategies)',
+
   PAPER_TRADING: 'Paper Trading Execution',
   CATALOG: 'Market Catalog Directory',
   TEST_WORKBENCH: 'In-App Test Workbench',

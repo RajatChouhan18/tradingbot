@@ -125,7 +125,6 @@ const INDICATOR_OPTIONS = [
 const OVERLAY_OPTIONS = INDICATOR_OPTIONS;
 
 const CANDLE_OPTIONS = [
-  { id: 'ALL', label: 'All Detected Patterns' },
   { id: 'ENGULFING_BULLISH', label: 'Bullish Engulfing' },
   { id: 'ENGULFING_BEARISH', label: 'Bearish Engulfing' },
   { id: 'HAMMER', label: 'Hammer' },
@@ -151,7 +150,7 @@ export default function TerminalConfigScreen() {
   const [defaultSymbol, setDefaultSymbol] = useState('RELIANCE');
   const [defaultTimeframe, setDefaultTimeframe] = useState('5m');
   const [selectedIndicators, setSelectedIndicators] = useState(['EMA_9', 'EMA_21', 'VWAP']);
-  const [selectedCandles, setSelectedCandles] = useState(['ALL']);
+  const [selectedCandles, setSelectedCandles] = useState(CANDLE_OPTIONS.map((p) => p.id));
 
   const [catalogSymbols, setCatalogSymbols] = useState(DEFAULT_SYMBOLS_BY_MARKET['INDIAN_EQUITY']);
   const [loading, setLoading] = useState(false);
@@ -168,13 +167,18 @@ export default function TerminalConfigScreen() {
           setDefaultMarket(mkt);
           setDefaultSymbol(cfg.default_symbol || 'RELIANCE');
           setDefaultTimeframe(cfg.default_timeframe || '5m');
-          const indics = cfg.default_indicators || cfg.default_overlays;
-          if (indics) {
-            setSelectedIndicators(indics.split(',').map((s) => s.trim()));
+          const indics = cfg.default_indicators !== undefined ? cfg.default_indicators : cfg.default_overlays;
+          if (indics !== undefined && indics !== null) {
+            setSelectedIndicators(indics.split(',').map((s) => s.trim()).filter(Boolean));
           }
-          const cands = cfg.default_candles || cfg.default_patterns;
-          if (cands) {
-            setSelectedCandles(cands.split(',').map((s) => s.trim()));
+          const cands = cfg.default_candles !== undefined ? cfg.default_candles : cfg.default_patterns;
+          if (cands !== undefined && cands !== null) {
+            const parsed = cands.split(',').map((s) => s.trim()).filter(Boolean);
+            if (parsed.includes('ALL')) {
+              setSelectedCandles(CANDLE_OPTIONS.map((p) => p.id));
+            } else {
+              setSelectedCandles(parsed);
+            }
           }
         }
       })
@@ -199,11 +203,24 @@ export default function TerminalConfigScreen() {
       .catch(() => {});
   }, [defaultMarket]);
 
-  const handleMarketChange = (newMarket) => {
+  const handleMarketChange = async (newMarket) => {
     setDefaultMarket(newMarket);
     const fallbackList = DEFAULT_SYMBOLS_BY_MARKET[newMarket] || [];
+    setCatalogSymbols(fallbackList);
     const def = MARKETS.find((m) => m.id === newMarket)?.defaultSymbol || fallbackList[0]?.symbol || 'RELIANCE';
     setDefaultSymbol(def);
+
+    try {
+      const res = await api.getCatalogSymbols({ market: newMarket, activeOnly: true, limit: 100 });
+      if (Array.isArray(res) && res.length > 0) {
+        setCatalogSymbols(res);
+        if (!res.some((item) => item.symbol === def)) {
+          setDefaultSymbol(res[0].symbol);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load dynamic catalog symbols for market:', newMarket, err);
+    }
   };
 
   const handleSave = async () => {
@@ -232,19 +249,22 @@ export default function TerminalConfigScreen() {
     setDefaultSymbol('RELIANCE');
     setDefaultTimeframe('5m');
     setSelectedIndicators(['EMA_9', 'EMA_21', 'VWAP']);
-    setSelectedCandles(['ALL']);
+    setSelectedCandles(CANDLE_OPTIONS.map((p) => p.id));
     setFeedback({ type: 'info', message: 'Preferences reset to factory defaults. Click Save to persist.' });
   };
 
+
+
   return (
-    <Box sx={{ p: 3, maxWidth: 1200, margin: '0 auto', color: 'text.primary' }}>
+    <Box sx={{ p: { xs: 1.5, sm: 2 }, maxWidth: 1300, margin: '0 auto', color: 'text.primary' }}>
       {/* Feedback Banner */}
       {feedback && (
         <Alert
           severity={feedback.type}
           onClose={() => setFeedback(null)}
           sx={{
-            mb: 2.5,
+            mb: 1.5,
+            py: 0.5,
             borderRadius: 2,
             bgcolor: feedback.type === 'success' ? '#1C3A24' : feedback.type === 'error' ? '#3A1C1C' : '#1E293B',
             color: feedback.type === 'success' ? '#32D74B' : feedback.type === 'error' ? '#FF453A' : '#38bdf8',
@@ -256,40 +276,47 @@ export default function TerminalConfigScreen() {
       )}
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}>
-          <CircularProgress color="primary" />
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+          <CircularProgress color="primary" size={28} />
         </Box>
       ) : (
-        <Grid container spacing={2.5}>
+        <Grid container spacing={1.5}>
           {/* 1. Primary Terminal Defaults Card */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Card sx={{ p: 2.5, bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', borderRadius: 2.5, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
-                <Compass size={18} color="#2563EB" />
-                <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800 }}>
+            <Card sx={{ p: 1.8, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.8 }}>
+                <Compass size={16} color="#2563EB" />
+                <Typography variant="h6" sx={{ fontSize: '0.88rem', fontWeight: 800 }}>
                   Primary Market &amp; Instrument Defaults
                 </Typography>
               </Box>
 
-              <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 2.5 }}>
-                Configure the baseline market exchange, instrument ticker, and chart timeframe loaded automatically whenever you access the MarketView terminal.
+              <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary', mb: 1.5 }}>
+                Baseline market exchange, instrument ticker, and chart timeframe loaded automatically upon access.
               </Typography>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
                 {/* Default Market Exchange */}
                 <FormControl fullWidth size="small">
-                  <InputLabel id="config-market-label" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                  <InputLabel id="config-market-label" sx={{ color: 'text.secondary', fontSize: '0.78rem' }}>
                     Default Market Exchange
                   </InputLabel>
                   <Select
                     labelId="config-market-label"
                     value={defaultMarket}
+                    displayEmpty
                     label="Default Market Exchange"
                     onChange={(e) => handleMarketChange(e.target.value)}
-                    sx={{ fontSize: '0.82rem', fontWeight: 700, borderRadius: 2 }}
+                    renderValue={(selected) => {
+                      if (!selected) return <span style={{ color: '#98989D' }}>Select Market</span>;
+                      const m = MARKETS.find((x) => x.id === selected);
+                      return m ? `${m.label} (${m.exchange})` : selected;
+                    }}
+                    sx={{ fontSize: '0.8rem', fontWeight: 700, borderRadius: 1.8 }}
                   >
+                    <MenuItem value="" disabled sx={{ color: '#98989D' }}>Select Market</MenuItem>
                     {MARKETS.map((m) => (
-                      <MenuItem key={m.id} value={m.id} sx={{ fontSize: '0.82rem', py: 0.8 }}>
+                      <MenuItem key={m.id} value={m.id} sx={{ fontSize: '0.8rem', py: 0.6 }}>
                         {m.label} ({m.exchange})
                       </MenuItem>
                     ))}
@@ -298,24 +325,34 @@ export default function TerminalConfigScreen() {
 
                 {/* Default Asset Symbol */}
                 <FormControl fullWidth size="small">
-                  <InputLabel id="config-symbol-label" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                  <InputLabel id="config-symbol-label" sx={{ color: 'text.secondary', fontSize: '0.78rem' }}>
                     Default Asset Symbol ({catalogSymbols.length})
                   </InputLabel>
                   <Select
                     labelId="config-symbol-label"
                     value={defaultSymbol}
+                    displayEmpty
                     label={`Default Asset Symbol (${catalogSymbols.length})`}
                     onChange={(e) => setDefaultSymbol(e.target.value)}
-                    sx={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: 'monospace', borderRadius: 2 }}
-                    MenuProps={{ PaperProps: { sx: { bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', maxHeight: 320 } } }}
+                    renderValue={(selected) => {
+                      if (!selected) return <span style={{ color: '#98989D' }}>Select Asset</span>;
+                      return (
+                        <Typography sx={{ fontFamily: 'monospace', fontWeight: 800, color: '#2563EB', fontSize: '0.8rem' }}>
+                          {selected}
+                        </Typography>
+                      );
+                    }}
+                    sx={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'monospace', borderRadius: 1.8 }}
+                    MenuProps={{ PaperProps: { sx: { bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', maxHeight: 300 } } }}
                   >
+                    <MenuItem value="" disabled sx={{ color: '#98989D' }}>Select Asset</MenuItem>
                     {catalogSymbols.map((item) => (
-                      <MenuItem key={item.symbol} value={item.symbol} sx={{ fontSize: '0.82rem', display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                          <Typography sx={{ fontFamily: 'monospace', fontWeight: 800, color: '#60a5fa' }}>{item.symbol}</Typography>
-                          <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary' }}>• {item.shortName || item.fullName}</Typography>
+                      <MenuItem key={item.symbol} value={item.symbol} sx={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between', gap: 1.5, py: 0.6 }}>
+                        <Box sx={{ display: 'flex', gap: 0.8, alignItems: 'center' }}>
+                          <Typography sx={{ fontFamily: 'monospace', fontWeight: 800, color: '#2563EB', fontSize: '0.78rem' }}>{item.symbol}</Typography>
+                          <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>• {item.shortName || item.fullName}</Typography>
                         </Box>
-                        <Chip label={item.exchange || item.market} size="small" sx={{ height: 18, fontSize: '0.65rem' }} />
+                        <Chip label={item.exchange || item.market} size="small" sx={{ height: 16, fontSize: '0.62rem' }} />
                       </MenuItem>
                     ))}
                   </Select>
@@ -323,18 +360,25 @@ export default function TerminalConfigScreen() {
 
                 {/* Default Timeframe */}
                 <FormControl fullWidth size="small">
-                  <InputLabel id="config-timeframe-label" sx={{ color: 'text.secondary', fontSize: '0.8rem' }}>
+                  <InputLabel id="config-timeframe-label" sx={{ color: 'text.secondary', fontSize: '0.78rem' }}>
                     Default Candle Timeframe
                   </InputLabel>
                   <Select
                     labelId="config-timeframe-label"
                     value={defaultTimeframe}
+                    displayEmpty
                     label="Default Candle Timeframe"
                     onChange={(e) => setDefaultTimeframe(e.target.value)}
-                    sx={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: 'monospace', borderRadius: 2 }}
+                    renderValue={(selected) => {
+                      if (!selected) return <span style={{ color: '#98989D', fontFamily: 'monospace' }}>1m, 2m, 1h, ...</span>;
+                      const tf = TIMEFRAMES.find((t) => t.value === selected);
+                      return tf ? tf.label : selected;
+                    }}
+                    sx={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'monospace', borderRadius: 1.8 }}
                   >
+                    <MenuItem value="" disabled sx={{ color: '#98989D' }}>1m, 2m, 1h, ...</MenuItem>
                     {TIMEFRAMES.map((tf) => (
-                      <MenuItem key={tf.value} value={tf.value} sx={{ fontSize: '0.82rem', py: 0.8, fontFamily: 'monospace' }}>
+                      <MenuItem key={tf.value} value={tf.value} sx={{ fontSize: '0.8rem', py: 0.6, fontFamily: 'monospace' }}>
                         {tf.label}
                       </MenuItem>
                     ))}
@@ -346,19 +390,38 @@ export default function TerminalConfigScreen() {
 
           {/* 2. Technical Indicators Defaults Card */}
           <Grid size={{ xs: 12, md: 6 }}>
-            <Card sx={{ p: 2.5, bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', borderRadius: 2.5, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
-                <Sliders size={18} color="#38bdf8" />
-                <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800 }}>
-                  Active Technical Indicators ({selectedIndicators.length})
-                </Typography>
+            <Card sx={{ p: 1.8, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 2, height: '100%' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Sliders size={16} color="#38bdf8" />
+                  <Typography variant="h6" sx={{ fontSize: '0.88rem', fontWeight: 800 }}>
+                    Active Technical Indicators ({selectedIndicators.length}/{INDICATOR_OPTIONS.length})
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.8 }}>
+                  <Button
+                    size="small"
+                    onClick={() => setSelectedIndicators(INDICATOR_OPTIONS.map((o) => o.id))}
+                    sx={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'none', color: '#2563EB', p: 0, minWidth: 0 }}
+                  >
+                    Select All
+                  </Button>
+                  <Typography sx={{ color: 'text.disabled', fontSize: '0.7rem' }}>|</Typography>
+                  <Button
+                    size="small"
+                    onClick={() => setSelectedIndicators([])}
+                    sx={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'none', color: '#f43f5e', p: 0, minWidth: 0 }}
+                  >
+                    Clear All
+                  </Button>
+                </Box>
               </Box>
 
-              <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 2 }}>
-                Select mathematical indicators and trend lines to synthesize immediately onto the chart canvas.
+              <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary', mb: 1.2 }}>
+                Mathematical indicators and trend lines to synthesize immediately onto the chart canvas.
               </Typography>
 
-              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 1 }}>
+              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(185px, 1fr))', gap: 0.4, maxHeight: 210, overflowY: 'auto', pr: 0.5 }}>
                 {INDICATOR_OPTIONS.map((opt) => {
                   const isChecked = selectedIndicators.includes(opt.id);
                   return (
@@ -375,19 +438,19 @@ export default function TerminalConfigScreen() {
                               setSelectedIndicators((prev) => prev.filter((id) => id !== opt.id));
                             }
                           }}
-                          sx={{ color: opt.color, '&.Mui-checked': { color: opt.color } }}
+                          sx={{ color: opt.color, '&.Mui-checked': { color: opt.color }, p: 0.4 }}
                         />
                       }
                       label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1, pr: 0.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                            <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: opt.color }} />
-                            <Typography sx={{ fontSize: '0.78rem', fontWeight: isChecked ? 700 : 500 }}>{opt.label}</Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 0.8, pr: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: opt.color }} />
+                            <Typography sx={{ fontSize: '0.74rem', fontWeight: isChecked ? 700 : 500 }}>{opt.label}</Typography>
                           </Box>
-                          <IndicatorIconSvg id={opt.id} color={opt.color} size={22} />
+                          <IndicatorIconSvg id={opt.id} color={opt.color} size={18} />
                         </Box>
                       }
-                      sx={{ mx: 0, width: '100%' }}
+                      sx={{ mx: 0, width: '100%', py: 0.1 }}
                     />
                   );
                 })}
@@ -397,37 +460,38 @@ export default function TerminalConfigScreen() {
 
           {/* 3. Candle Pattern Recognition Defaults Card */}
           <Grid size={{ xs: 12 }}>
-            <Card sx={{ p: 2.5, bgcolor: '#1E1E1E', border: '1px solid #2C2C2E', borderRadius: 2.5 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                  <Layers size={18} color="#32D74B" />
-                  <Typography variant="h6" sx={{ fontSize: '0.95rem', fontWeight: 800 }}>
-                    Default Candle Pattern Filters ({selectedCandles.includes('ALL') ? 'All' : selectedCandles.length})
+            <Card sx={{ p: 1.8, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.8 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Layers size={16} color="#32D74B" />
+                  <Typography variant="h6" sx={{ fontSize: '0.88rem', fontWeight: 800 }}>
+                    Default Candle Pattern Filters ({selectedCandles.length}/{CANDLE_OPTIONS.length})
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: 0.8 }}>
                   <Button
                     size="small"
-                    onClick={() => setSelectedCandles(['ALL'])}
-                    sx={{ fontSize: '0.72rem', textTransform: 'none', color: '#32D74B' }}
+                    onClick={() => setSelectedCandles(CANDLE_OPTIONS.map((p) => p.id))}
+                    sx={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'none', color: '#32D74B', p: 0, minWidth: 0 }}
                   >
                     Select All
                   </Button>
+                  <Typography sx={{ color: 'text.disabled', fontSize: '0.7rem' }}>|</Typography>
                   <Button
                     size="small"
                     onClick={() => setSelectedCandles([])}
-                    sx={{ fontSize: '0.72rem', textTransform: 'none', color: '#f43f5e' }}
+                    sx={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'none', color: '#f43f5e', p: 0, minWidth: 0 }}
                   >
                     Clear All
                   </Button>
                 </Box>
               </Box>
 
-              <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 2 }}>
-                Choose which algorithmic candlestick patterns should automatically trigger chart markers and telemetry badges upon load.
+              <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary', mb: 1.2 }}>
+                Algorithmic candlestick patterns that automatically trigger chart markers and telemetry badges upon load.
               </Typography>
 
-              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 1 }}>
+              <FormGroup sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))', gap: 0.4 }}>
                 {CANDLE_OPTIONS.map((p) => {
                   const isChecked = selectedCandles.includes(p.id);
                   return (
@@ -438,28 +502,24 @@ export default function TerminalConfigScreen() {
                           size="small"
                           checked={isChecked}
                           onChange={(e) => {
-                            if (p.id === 'ALL') {
-                              setSelectedCandles(e.target.checked ? ['ALL'] : []);
+                            if (e.target.checked) {
+                              setSelectedCandles((prev) => [...prev, p.id]);
                             } else {
-                              if (e.target.checked) {
-                                setSelectedCandles((prev) => [...prev.filter((id) => id !== 'ALL'), p.id]);
-                              } else {
-                                setSelectedCandles((prev) => prev.filter((id) => id !== p.id));
-                              }
+                              setSelectedCandles((prev) => prev.filter((id) => id !== p.id));
                             }
                           }}
-                          sx={{ color: '#32D74B', '&.Mui-checked': { color: '#32D74B' } }}
+                          sx={{ color: '#32D74B', '&.Mui-checked': { color: '#32D74B' }, p: 0.4 }}
                         />
                       }
                       label={
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 1, pr: 0.5 }}>
-                          <Typography sx={{ fontSize: '0.76rem', color: isChecked ? 'text.primary' : 'text.secondary', fontWeight: isChecked ? 700 : 500 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 0.8, pr: 0.5 }}>
+                          <Typography sx={{ fontSize: '0.74rem', color: isChecked ? 'text.primary' : 'text.secondary', fontWeight: isChecked ? 700 : 500 }}>
                             {p.label}
                           </Typography>
-                          <CandleIconSvg id={p.id} size={18} />
+                          <CandleIconSvg id={p.id} size={16} />
                         </Box>
                       }
-                      sx={{ mx: 0, width: '100%' }}
+                      sx={{ mx: 0, width: '100%', py: 0.1 }}
                     />
                   );
                 })}
@@ -469,23 +529,24 @@ export default function TerminalConfigScreen() {
 
           {/* 4. Action Buttons Bar */}
           <Grid size={{ xs: 12 }}>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', alignItems: 'center', pt: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end', alignItems: 'center', pt: 0.5 }}>
               <Button
                 variant="outlined"
                 onClick={handleResetDefaults}
                 disabled={saving}
+                size="small"
                 sx={{
-                  borderColor: '#2C2C2E',
+                  borderColor: 'divider',
                   color: 'text.secondary',
                   fontWeight: 700,
-                  fontSize: '0.8rem',
+                  fontSize: '0.78rem',
                   textTransform: 'none',
-                  borderRadius: 2,
-                  px: 2.5,
-                  py: 1,
-                  '&:hover': { borderColor: '#475569', color: 'text.primary' },
+                  borderRadius: 1.8,
+                  px: 2,
+                  py: 0.7,
+                  '&:hover': { borderColor: 'text.primary', color: 'text.primary' },
                 }}
-                startIcon={<RotateCcw size={15} />}
+                startIcon={<RotateCcw size={14} />}
               >
                 Reset to Defaults
               </Button>
@@ -494,18 +555,19 @@ export default function TerminalConfigScreen() {
                 variant="contained"
                 onClick={handleSave}
                 disabled={saving}
+                size="small"
                 sx={{
                   bgcolor: '#2563EB',
                   color: '#ffffff',
                   fontWeight: 700,
-                  fontSize: '0.8rem',
+                  fontSize: '0.78rem',
                   textTransform: 'none',
-                  borderRadius: 2,
-                  px: 3.5,
-                  py: 1,
+                  borderRadius: 1.8,
+                  px: 2.8,
+                  py: 0.7,
                   '&:hover': { bgcolor: '#1d4ed8' },
                 }}
-                startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save size={16} />}
+                startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <Save size={14} />}
               >
                 {saving ? 'Saving...' : 'Save Preferences'}
               </Button>

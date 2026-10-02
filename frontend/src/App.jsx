@@ -7,7 +7,9 @@ import PaperTradingView from './components/PaperTradingView';
 import MarketDataView from './components/MarketDataView';
 import MarketViewScreen from './components/marketview/MarketViewScreen';
 import TerminalConfigScreen from './components/marketview/TerminalConfigScreen';
+import EventTriggersScreen from './components/events/EventTriggersScreen';
 import AuditingView from './components/AuditingView';
+
 import LoggingView from './components/LoggingView';
 import UserManagementScreen from './components/admin/UserManagementScreen';
 import MarketCatalogScreen from './components/catalog/MarketCatalogScreen';
@@ -220,7 +222,7 @@ export default function App() {
       case 'terminal_config':
         return 'Terminal Configuration';
       case 'events':
-        return 'Event Triggers';
+        return 'Event WatchDog';
       case 'algotrade':
         return 'AlgoTrade';
       case 'paper':
@@ -376,9 +378,14 @@ export default function App() {
             <TerminalConfigScreen />
           )}
 
+          {currentModule === 'events' && (
+            <EventTriggersScreen showToast={showToast} />
+          )}
+
           {currentModule === 'catalog' && (
             <MarketCatalogScreen showToast={showToast} />
           )}
+
 
           {currentModule === 'auditing' && (
             <AuditingView

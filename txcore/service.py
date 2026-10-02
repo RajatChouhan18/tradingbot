@@ -63,6 +63,7 @@ app.add_middleware(
 # Mount Modular Routers
 from txcore.catalog.router import catalog_router
 from txcore.marketview.router import marketview_router
+from txcore.events.router import events_router
 
 app.include_router(auth_router)
 app.include_router(user_router)
@@ -70,6 +71,9 @@ app.include_router(catalog_router, prefix="/api")
 app.include_router(catalog_router)
 app.include_router(marketview_router, prefix="/api")
 app.include_router(marketview_router)
+app.include_router(events_router)
+app.include_router(events_router, prefix="/api")
+
 
 
 # Status & Health Endpoints

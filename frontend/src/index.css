@@ -41,43 +41,43 @@
 }
 
 [data-theme="enterprise"] {
-  /* NOSSA Enterprise Portal Theme (Extracted from NOSSA Seguros Billing Module) */
-  --bg-primary: #EBEEF2;
-  --bg-secondary: #FFFFFF;
-  --bg-card: #FFFFFF;
-  --bg-card-hover: #F8F9FB;
+  /* Institutional Light Pro Theme - Slate/Grey-Blue Workstation */
+  --bg-primary: #EEF2F6;
+  --bg-secondary: #F8FAFC;
+  --bg-card: #F8FAFC;
+  --bg-card-hover: #EDF2F7;
   --bg-input: #FFFFFF;
   
-  --border-color: #D5D8DC;
-  --border-hover: #BDC3C7;
-  --border-active: #1B3A6B;
+  --border-color: #CBD5E1;
+  --border-hover: #94A3B8;
+  --border-active: #2563EB;
 
-  --text-main: #1A1A2E;
-  --text-muted: #5D6D7E;
-  --text-dim: #95A5A6;
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-dim: #64748B;
 
-  --bullish: #82B440;
-  --bullish-dim: #EFF5E6;
-  --bullish-border: #A3D163;
+  --bullish: #16A34A;
+  --bullish-dim: rgba(22, 163, 74, 0.1);
+  --bullish-border: rgba(22, 163, 74, 0.3);
 
-  --bearish: #C0392B;
-  --bearish-dim: #FDEDEC;
-  --bearish-border: #E6B0AA;
+  --bearish: #DC2626;
+  --bearish-dim: rgba(220, 38, 38, 0.1);
+  --bearish-border: rgba(220, 38, 38, 0.3);
 
-  --accent: #1B3A6B;
-  --accent-hover: #152E56;
-  --accent-dim: #EBF5FB;
-  --accent-border: #AED6F1;
+  --accent: #2563EB;
+  --accent-hover: #1D4ED8;
+  --accent-dim: rgba(37, 99, 235, 0.1);
+  --accent-border: rgba(37, 99, 235, 0.3);
 
-  --warning: #E67E22;
-  --warning-dim: #FDF2E9;
+  --warning: #D97706;
+  --warning-dim: rgba(217, 119, 6, 0.1);
 
-  --header-bg: #1B3A6B;
-  --header-border: rgba(255, 255, 255, 0.15);
-  --sidebar-bg: #1B3A6B;
-  --sidebar-border: #152E56;
-  --table-header-bg: #E8ECF0;
-  --table-row-alt: #F8F9FB;
+  --header-bg: rgba(248, 250, 252, 0.96);
+  --header-border: #CBD5E1;
+  --sidebar-bg: #F8FAFC;
+  --sidebar-border: #CBD5E1;
+  --table-header-bg: #EEF2F6;
+  --table-row-alt: #F1F5F9;
 }
 
 * {
@@ -328,199 +328,199 @@ input:not([class*="Mui"])::placeholder, textarea:not([class*="Mui"])::placeholde
 }
 
 /* ========================================================================= */
-/* ENTERPRISE PORTAL (NOSSA SEGUROS) DESIGN SYSTEM OVERRIDES                */
+/* INSTITUTIONAL LIGHT PRO DESIGN SYSTEM OVERRIDES                           */
 /* ========================================================================= */
 
 [data-theme="enterprise"] body {
-  background-color: #EBEEF2;
-  color: #1A1A2E;
+  background-color: #F4F6F8;
+  color: #0F172A;
 }
 
 [data-theme="enterprise"] ::-webkit-scrollbar-track {
-  background: #EBEEF2;
+  background: #F4F6F8;
 }
 [data-theme="enterprise"] ::-webkit-scrollbar-thumb {
-  background: #BDC3C7;
+  background: #CBD5E1;
   border-radius: 4px;
 }
 [data-theme="enterprise"] ::-webkit-scrollbar-thumb:hover {
-  background: #95A5A6;
+  background: #94A3B8;
 }
 
-/* Glass Panels -> Crisp White Corporate Cards */
+/* Glass Panels -> Crisp White Modern Surface Cards */
 [data-theme="enterprise"] .glass-panel {
   background: #FFFFFF !important;
-  border: 1px solid #D5D8DC !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 14px rgba(27, 58, 107, 0.04) !important;
-  color: #1A1A2E;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03) !important;
+  color: #0F172A;
 }
 [data-theme="enterprise"] .glass-panel:hover {
-  border-color: #BDC3C7 !important;
+  border-color: #CBD5E1 !important;
 }
 
-/* Enterprise Header: Deep Navy Top Bar */
+/* Institutional Light Header: Clean White Sticky Bar */
 [data-theme="enterprise"] header {
-  background: #1B3A6B !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 2px 8px rgba(27, 58, 107, 0.15);
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 [data-theme="enterprise"] header h1 {
-  color: #FFFFFF !important;
+  color: #0F172A !important;
 }
 
-/* Enterprise Sidebar: Deep Navy with Crisp Active States */
+/* Institutional Light Sidebar: Clean White with Subtle Border */
 [data-theme="enterprise"] aside {
-  background: #1B3A6B !important;
-  border-right: 1px solid #152E56 !important;
+  background: #FFFFFF !important;
+  border-right: 1px solid #E2E8F0 !important;
 }
 
-/* Enterprise Buttons */
+/* Institutional Light Buttons */
 [data-theme="enterprise"] .btn-execute {
-  background: #1B3A6B !important;
+  background: #2563EB !important;
   color: #FFFFFF !important;
-  border: 1px solid #1B3A6B !important;
+  border: 1px solid #2563EB !important;
   font-weight: 600 !important;
   border-radius: 6px !important;
 }
 [data-theme="enterprise"] .btn-execute:hover:not(:disabled) {
-  background: #152E56 !important;
-  border-color: #0F2342 !important;
+  background: #1D4ED8 !important;
+  border-color: #1E40AF !important;
 }
 [data-theme="enterprise"] .btn-emerald {
-  background: #82B440 !important;
+  background: #16A34A !important;
   color: #FFFFFF !important;
-  border: 1px solid #82B440 !important;
+  border: 1px solid #16A34A !important;
   font-weight: 600 !important;
   border-radius: 6px !important;
 }
 [data-theme="enterprise"] .btn-emerald:hover:not(:disabled) {
-  background: #729E37 !important;
-  border-color: #638A30 !important;
+  background: #15803D !important;
+  border-color: #166534 !important;
 }
 [data-theme="enterprise"] .btn-stop {
-  background: #C0392B !important;
+  background: #DC2626 !important;
   color: #FFFFFF !important;
-  border: 1px solid #C0392B !important;
+  border: 1px solid #DC2626 !important;
   font-weight: 600 !important;
   border-radius: 6px !important;
 }
 [data-theme="enterprise"] .btn-stop:hover:not(:disabled) {
-  background: #A93226 !important;
+  background: #B91C1C !important;
 }
 [data-theme="enterprise"] .btn-blue {
-  background: #EBF5FB !important;
-  color: #1B3A6B !important;
-  border: 1.5px solid #AED6F1 !important;
+  background: #EFF6FF !important;
+  color: #2563EB !important;
+  border: 1.5px solid #BFDBFE !important;
   font-weight: 600 !important;
   border-radius: 6px !important;
 }
 [data-theme="enterprise"] .btn-blue:hover:not(:disabled) {
-  background: #D4E6F1 !important;
+  background: #DBEAFE !important;
 }
 [data-theme="enterprise"] .btn-cancel {
-  background: #F2F3F4 !important;
-  color: #5D6D7E !important;
-  border: 1.5px solid #D5D8DC !important;
+  background: #F1F5F9 !important;
+  color: #475569 !important;
+  border: 1.5px solid #E2E8F0 !important;
   font-weight: 600 !important;
   border-radius: 6px !important;
 }
 [data-theme="enterprise"] .btn-cancel:hover:not(:disabled) {
-  background: #E5E7E9 !important;
-  color: #1A1A2E !important;
+  background: #E2E8F0 !important;
+  color: #0F172A !important;
 }
 
-/* Enterprise Inputs */
+/* Institutional Light Inputs */
 [data-theme="enterprise"] input,
 [data-theme="enterprise"] select,
 [data-theme="enterprise"] textarea {
   background: #FFFFFF !important;
-  border: 1px solid #D5D8DC !important;
-  color: #1A1A2E !important;
+  border: 1px solid #E2E8F0 !important;
+  color: #0F172A !important;
   border-radius: 6px !important;
 }
 [data-theme="enterprise"] input:focus,
 [data-theme="enterprise"] select:focus,
 [data-theme="enterprise"] textarea:focus {
-  border-color: #1B3A6B !important;
+  border-color: #2563EB !important;
   background: #FFFFFF !important;
-  box-shadow: 0 0 0 2px rgba(27, 58, 107, 0.12) !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
 }
 [data-theme="enterprise"] input::placeholder,
 [data-theme="enterprise"] textarea::placeholder {
-  color: #95A5A6 !important;
+  color: #94A3B8 !important;
 }
 
-/* Enterprise Rounded Pill Badges */
+/* Institutional Light Badges */
 [data-theme="enterprise"] .badge {
-  border-radius: 20px !important;
+  border-radius: 6px !important;
   font-size: 0.6875rem !important;
-  font-weight: 600 !important;
-  padding: 3px 10px !important;
-  letter-spacing: 0.02em !important;
+  font-weight: 700 !important;
+  padding: 2px 8px !important;
+  letter-spacing: 0.03em !important;
   text-transform: uppercase !important;
 }
 [data-theme="enterprise"] .badge-running {
-  background: #EFF5E6 !important;
-  color: #82B440 !important;
-  border: 1px solid #A3D163 !important;
+  background: rgba(22, 163, 74, 0.1) !important;
+  color: #16A34A !important;
+  border: 1px solid rgba(22, 163, 74, 0.3) !important;
 }
 [data-theme="enterprise"] .badge-idle {
-  background: #F2F3F4 !important;
-  color: #5D6D7E !important;
-  border: 1px solid #D5D8DC !important;
+  background: #F1F5F9 !important;
+  color: #64748B !important;
+  border: 1px solid #E2E8F0 !important;
 }
 [data-theme="enterprise"] .badge-paused {
-  background: #FDF2E9 !important;
-  color: #E67E22 !important;
-  border: 1px solid #FAD7A0 !important;
+  background: rgba(217, 119, 6, 0.1) !important;
+  color: #D97706 !important;
+  border: 1px solid rgba(217, 119, 6, 0.3) !important;
 }
 [data-theme="enterprise"] .badge-stopped {
-  background: #FDEDEC !important;
-  color: #C0392B !important;
-  border: 1px solid #E6B0AA !important;
+  background: rgba(220, 38, 38, 0.1) !important;
+  color: #DC2626 !important;
+  border: 1px solid rgba(220, 38, 38, 0.3) !important;
 }
 [data-theme="enterprise"] .badge-deleted {
-  background: #F2F3F4 !important;
-  color: #95A5A6 !important;
-  border: 1px solid #BDC3C7 !important;
+  background: #F1F5F9 !important;
+  color: #94A3B8 !important;
+  border: 1px solid #CBD5E1 !important;
 }
 [data-theme="enterprise"] .badge-call {
-  background: #EFF5E6 !important;
-  color: #82B440 !important;
-  border: 1px solid #A3D163 !important;
+  background: rgba(22, 163, 74, 0.1) !important;
+  color: #16A34A !important;
+  border: 1px solid rgba(22, 163, 74, 0.3) !important;
 }
 [data-theme="enterprise"] .badge-put {
-  background: #FDEDEC !important;
-  color: #C0392B !important;
-  border: 1px solid #E6B0AA !important;
+  background: rgba(220, 38, 38, 0.1) !important;
+  color: #DC2626 !important;
+  border: 1px solid rgba(220, 38, 38, 0.3) !important;
 }
 
-/* Enterprise Tables: Slate Header, Alternating Rows */
+/* Institutional Light Tables: Slate Header, Crisp White Alternating Rows */
 [data-theme="enterprise"] table thead tr {
-  background: #E8ECF0 !important;
+  background: #F8FAFC !important;
 }
 [data-theme="enterprise"] table th {
-  color: #1B3A6B !important;
-  font-weight: 600 !important;
-  border-bottom: 1px solid #D5D8DC !important;
+  color: #475569 !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid #E2E8F0 !important;
 }
 [data-theme="enterprise"] table td {
-  color: #1A1A2E !important;
-  border-bottom: 1px solid #D5D8DC !important;
+  color: #0F172A !important;
+  border-bottom: 1px solid #E2E8F0 !important;
 }
 [data-theme="enterprise"] table tbody tr:nth-child(even) {
-  background: #F8F9FB !important;
+  background: #F8FAFC !important;
 }
 [data-theme="enterprise"] table tbody tr:hover {
-  background: #EFF3F6 !important;
+  background: #F1F5F9 !important;
 }
 
-/* Enterprise Typography Hierarchy */
+/* Institutional Light Typography Hierarchy */
 [data-theme="enterprise"] h1:not(header h1),
 [data-theme="enterprise"] h2,
 [data-theme="enterprise"] h3,
 [data-theme="enterprise"] h4 {
-  color: #1B3A6B !important;
+  color: #0F172A !important;
 }
 
 /* Overrides for hardcoded dark inline styles inside views */
@@ -528,101 +528,100 @@ input:not([class*="Mui"])::placeholder, textarea:not([class*="Mui"])::placeholde
 [data-theme="enterprise"] main [style*="background: rgba(20, 27, 44"],
 [data-theme="enterprise"] main [style*="background: linear-gradient(135deg, rgba(15, 20, 32"],
 [data-theme="enterprise"] main [style*="background: linear-gradient(145deg, rgba(20, 27, 44"] {
-  background: #F8F9FB !important;
-  border-color: #D5D8DC !important;
-  color: #1A1A2E !important;
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
 }
 
 [data-theme="enterprise"] main [style*="color: #ffffff"],
 [data-theme="enterprise"] main [style*="color: rgb(255, 255, 255)"],
 [data-theme="enterprise"] main [style*="color: #f8fafc"],
 [data-theme="enterprise"] main [style*="color: #f1f5f9"] {
-  color: #1A1A2E !important;
+  color: #0F172A !important;
 }
 
-/* Headers, sidebars, and primary buttons keep their crisp white foreground */
+/* Buttons keep their white foreground */
 [data-theme="enterprise"] .btn-execute *,
 [data-theme="enterprise"] .btn-emerald *,
 [data-theme="enterprise"] .btn-stop *,
 [data-theme="enterprise"] .btn-execute,
 [data-theme="enterprise"] .btn-emerald,
-[data-theme="enterprise"] .btn-stop,
-[data-theme="enterprise"] header *,
-[data-theme="enterprise"] aside * {
-  /* keep crisp white foreground on dark navy container */
+[data-theme="enterprise"] .btn-stop {
+  color: #FFFFFF !important;
 }
 
 [data-theme="enterprise"] main [style*="color: #cbd5e1"],
 [data-theme="enterprise"] main [style*="color: #94a3b8"] {
-  color: #5D6D7E !important;
+  color: #64748B !important;
 }
 
 [data-theme="enterprise"] main [style*="color: #64748b"] {
-  color: #95A5A6 !important;
+  color: #64748B !important;
 }
 
 [data-theme="enterprise"] main [style*="border: 1px solid rgba(255, 255, 255"],
 [data-theme="enterprise"] main [style*="border-color: rgba(255, 255, 255"] {
-  border-color: #D5D8DC !important;
+  border-color: #E2E8F0 !important;
 }
 
-/* Specific palette overrides for badges and tags matching NOSSA design */
+/* Specific palette overrides for badges and tags matching Institutional Light design */
 [data-theme="enterprise"] main [style*="background: rgba(37, 99, 235"],
 [data-theme="enterprise"] main [style*="background: rgba(59, 130, 246"] {
-  background: #EBF5FB !important;
-  border-color: #AED6F1 !important;
-  color: #1B3A6B !important;
+  background: #EFF6FF !important;
+  border-color: #BFDBFE !important;
+  color: #2563EB !important;
 }
 [data-theme="enterprise"] main [style*="color: #93c5fd"],
 [data-theme="enterprise"] main [style*="color: #60a5fa"],
 [data-theme="enterprise"] main [style*="color: #38bdf8"] {
-  color: #1B3A6B !important;
+  color: #2563EB !important;
 }
 
 [data-theme="enterprise"] main [style*="background: rgba(168, 85, 247"],
 [data-theme="enterprise"] main [style*="background: rgba(147, 51, 234"] {
-  background: #F4ECF7 !important;
-  border-color: #D7BDE2 !important;
-  color: #8E44AD !important;
+  background: #FAF5FF !important;
+  border-color: #E9D5FF !important;
+  color: #7E22CE !important;
 }
 [data-theme="enterprise"] main [style*="color: #c084fc"],
 [data-theme="enterprise"] main [style*="color: #d8b4fe"],
 [data-theme="enterprise"] main [style*="color: #a855f7"] {
-  color: #8E44AD !important;
+  color: #7E22CE !important;
 }
 
 [data-theme="enterprise"] main [style*="background: rgba(16, 185, 129"],
 [data-theme="enterprise"] main [style*="background: rgba(0, 192, 135"] {
-  background: #EFF5E6 !important;
-  border-color: #A3D163 !important;
-  color: #82B440 !important;
+  background: #F0FDF4 !important;
+  border-color: #BBF7D0 !important;
+  color: #16A34A !important;
 }
 [data-theme="enterprise"] main [style*="color: #34d399"],
 [data-theme="enterprise"] main [style*="color: #10b981"],
 [data-theme="enterprise"] main [style*="color: #00c087"] {
-  color: #82B440 !important;
+  color: #16A34A !important;
 }
 
 [data-theme="enterprise"] main [style*="background: rgba(239, 68, 68"],
 [data-theme="enterprise"] main [style*="background: rgba(244, 63, 94"] {
-  background: #FDEDEC !important;
-  border-color: #E6B0AA !important;
-  color: #C0392B !important;
+  background: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #DC2626 !important;
 }
 [data-theme="enterprise"] main [style*="color: #f87171"],
 [data-theme="enterprise"] main [style*="color: #fb7185"],
 [data-theme="enterprise"] main [style*="color: #f43f5e"] {
-  color: #C0392B !important;
+  color: #DC2626 !important;
 }
 
 [data-theme="enterprise"] main [style*="background: rgba(245, 158, 11"],
 [data-theme="enterprise"] main [style*="background: rgba(217, 119, 6"] {
-  background: #FDF2E9 !important;
-  border-color: #FAD7A0 !important;
-  color: #E67E22 !important;
+  background: #FFFBEB !important;
+  border-color: #FDE68A !important;
+  color: #D97706 !important;
 }
 [data-theme="enterprise"] main [style*="color: #fbbf24"],
 [data-theme="enterprise"] main [style*="color: #f59e0b"] {
-  color: #E67E22 !important;
+  color: #D97706 !important;
 }
+
 

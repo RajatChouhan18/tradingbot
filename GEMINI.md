@@ -132,6 +132,11 @@ Whenever any module, service, strategy, or UI component is modified, added, or r
   - Header text size: `variant="h6"` or `variant="h5"` (maximum `1.25rem` - `1.5rem`), bold weight (`700`).
   - Eliminate verbose decorative subtitles, redundant module numbered chips (e.g. "Module 2"), and extraneous manual refresh buttons unless explicitly requested.
 
+### 5.5 Universal Reactive Filtering (Instant `onChange` Invariant):
+- **Immediate Reactive Querying**: Every filter dropdown, asset selector, timeframe picker, market exchange selector, status filter, live switch toggle, date range input, and search bar across ALL platform modules MUST apply its filter state and trigger data fetching/rendering immediately upon `onChange`.
+- **Zero Manual Apply Steps**: Never require a secondary "Apply", "Filter", or "Submit" button to trigger data filtering, chart reloads, or table refreshes unless explicitly requested for heavy batch operations.
+- **Immediate State Synchronization**: Filter changes must synchronously update the active query parameters, reset pagination (`page = 0`), and trigger data loaders or Lightweight Chart re-renders without stale state delays.
+
 ---
 
 ## 6. Frontend Design Framework: Institutional Financial Dashboard (Synthesized with Material UI)

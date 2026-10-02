@@ -52,12 +52,20 @@ frontend/
         ├── catalog/                     # Market Catalog Module (Module 2)
         │   ├── MarketCatalogScreen.jsx  # Multi-market catalog directory & table
         │   └── AddAssetModal.jsx        # Live TradingView search & verification modal
+        ├── marketview/                  # MarketView Engine (Module 3)
+        │   ├── MarketViewScreen.jsx     # Live Lightweight Charts, overlays, side-by-side comparison
+        │   └── TerminalConfigScreen.jsx # User terminal persistence & indicator defaults
+        ├── events/                      # Event Triggers Module (Module 4)
+        │   ├── EventTriggersScreen.jsx  # Standalone signal watchers, data table, reactive filters
+        │   ├── CreateEventTriggerModal.jsx # Dynamic rule threshold form & dry-run preview simulator
+        │   └── EventDetailsModal.jsx    # Execution history audit logs & test runner
         └── admin/                       # User & Role Administration (Module 1)
             ├── UserManagementScreen.jsx # Users, roles, cash top-ups, permissions
             ├── CreateUserModal.jsx      # New user modal
             ├── CreateRoleModal.jsx      # Role builder modal
             └── CashTopupModal.jsx       # Balance adjustment modal
 ```
+
 
 ---
 

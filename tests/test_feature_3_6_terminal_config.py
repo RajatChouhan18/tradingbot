@@ -89,4 +89,30 @@ async def test_user_terminal_config_isolated_crud():
         assert db_cfg.updatedBy == DEFAULT_SUPERADMIN_EMAIL
         assert db_cfg.createdAt is not None
         assert db_cfg.updatedAt is not None
+
+        # 6. Test saving empty candle patterns & empty indicators (No patterns selected)
+        empty_payload = {
+            "default_market": "CRYPTO",
+            "default_symbol": "BTCUSDT",
+            "default_timeframe": "15m",
+            "default_indicators": "",
+            "default_overlays": "",
+            "default_candles": "",
+            "default_patterns": "",
+        }
+        empty_put_res = await client.put("/api/v1/users/me/terminal-config", json=empty_payload, headers=headers)
+        assert empty_put_res.status_code == 200
+        empty_put_data = empty_put_res.json()
+        assert empty_put_data["default_indicators"] == ""
+        assert empty_put_data["default_candles"] == ""
+
+        # Fetch to confirm empty patterns are persisted and returned
+        empty_get_res = await client.get("/api/v1/users/me/terminal-config", headers=headers)
+        assert empty_get_res.status_code == 200
+        empty_get_data = empty_get_res.json()
+        assert empty_get_data["default_indicators"] == ""
+        assert empty_get_data["default_candles"] == ""
+        assert empty_get_data["default_patterns"] == ""
+        assert empty_get_data["is_customized"] is True
+
         print("\n[SUCCESS] Feature 3.6 User Terminal Config CRUD & Audit Columns verified!")

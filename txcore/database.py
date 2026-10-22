@@ -10,7 +10,10 @@ import time
 import asyncio
 import logging
 from typing import Optional, Dict, Any
+from dotenv import load_dotenv
 from prisma import Prisma
+
+load_dotenv()
 
 logger = logging.getLogger("auratrade.database")
 

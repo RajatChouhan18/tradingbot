@@ -12,7 +12,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+CHAT_ID = os.getenv("CHAT_IDS")
 
 def test_telegram():
     if not TOKEN:
